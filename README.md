@@ -35,9 +35,7 @@ where
 - "enable_log_file": switches logging
 - "log_file_name": log file path
 
-You can edit config file while service is running and the service will
-update values from config file... modifying config values you can vary
-program behaviour.
+You can edit config file while service is running and the service will update values from config file. By modifying config values you can vary program behaviour. For example, you can turn logging on and off.
 
 Checking log file you can monitor current application activity.
 
@@ -50,15 +48,10 @@ inside of the top-level object.
 
 Rates fetching is scheduled in configuration file
 
-If service is failed to fetch rates data from remote, it schedules fetching
-attempt into special file mentioned as "sched_file_name" in configuration which
-is scanned by "failed_sched_cron_string" schedule in attempt to retry fetching
-currency exchange rates data from server.
+If service is failed to fetch rates data from remote, it schedules fetching attempt into special file mentioned as "sched_file_name" in configuration which
+is scanned by "failed_sched_cron_string" schedule in attempt to retry fetching currency exchange rates data from server.
 
-For now, the only format supported is JSON for everything data processing
-and exchange. The benefit is that provided json implementation is hardware
-accelerated so enabled to parse near 2 GB JSON text per second, so even many
-years of data collecting will not be a problem in terms of performance.
+For now, the only format supported is JSON for everything data processing and exchange. The benefit is that provided json implementation is hardware accelerated so enabled to parse near 2 GB JSON text per second, so even many years of data collecting will not be a problem in terms of performance.
 
 ## Used 3rd party sources
 
