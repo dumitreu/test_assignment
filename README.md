@@ -1,7 +1,9 @@
 # Test Assignment
 
-## Application Deployment and Functioning
+## Application Deployment
+Application binaries and batch files to managing service installation/state are provided in  folder "dist". You can also find README.txt there
 
+## Functioning
 During installation, configuration file is created and path to it is written
 to the
 
@@ -57,3 +59,7 @@ For now, the only format supported is JSON for everything data processing
 and exchange. The benefit is that provided json implementation is hardware
 accelerated so enabled to parse near 2 GB JSON text per second, so even many
 years of data collecting will not be a problem in terms of performance.
+
+## User 3rd party sources
+
+Nothing but the OpenSSL library
