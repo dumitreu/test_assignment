@@ -7,11 +7,11 @@
 #include <string>
 
 #include <WinReg.hpp>
+#include <croncpp.h>
 
 #include "src/globals.hpp"
 #include "src/configuration.hpp"
 #include "src/exchange_rates_fetch_logic.hpp"
-#include "src/croncpp.h"
 
 static SERVICE_STATUS        g_ServiceStatus = {0};
 static SERVICE_STATUS_HANDLE g_StatusHandle = NULL;

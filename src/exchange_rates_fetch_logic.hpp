@@ -8,13 +8,13 @@
 #include <threading.hpp>
 #include <command_queue.hpp>
 #include <http_client/httprequest.hpp>
+#include <croncpp.h>
 
 #include "misc_utils.hpp"
 #include "api_queries_composer.hpp"
 #include "configuration.hpp"
 #include "fetch_schedule.hpp"
 #include "rates_storage.hpp"
-#include "croncpp.h"
 #include "globals.hpp"
 #include "logging.hpp"
 
