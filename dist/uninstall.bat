@@ -1,0 +1,1 @@
+CurrRatesService.exe uninstall
