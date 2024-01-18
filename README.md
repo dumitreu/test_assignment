@@ -1,7 +1,7 @@
 # Test Assignment
 
 ## Application Deployment
-Application binaries and batch files to managing service installation/state are provided in  folder "dist". You can also find README.txt there
+Application binaries and batch files to manage service installation/state are provided in  folder "dist". You can also find README.txt there
 
 ## Functioning
 During installation, configuration file is created and path to it is written
