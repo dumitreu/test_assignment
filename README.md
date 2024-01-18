@@ -2,12 +2,6 @@
 
 ## Application Deployment and Functioning
 
-Copy this whole folder (together with content) into any desireable place on 
-disk (which should be writeable) and execute install.bat and then start.bat.
-
-This will install and start currency download service which, by default,
-stores currency rates data inside CurrRatesService.db file (in JSON format).
-
 During installation, configuration file is created and path to it is written
 to the
 
