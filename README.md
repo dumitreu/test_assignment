@@ -60,6 +60,6 @@ and exchange. The benefit is that provided json implementation is hardware
 accelerated so enabled to parse near 2 GB JSON text per second, so even many
 years of data collecting will not be a problem in terms of performance.
 
-## User 3rd party sources
+## Used 3rd party sources
 
 Nothing but the OpenSSL library
