@@ -16,12 +16,12 @@ Here is the example of configuration file:
 ```
 {
     "cron_string": "0 0 6 * * *",
-    "data_file_name": "C:\\temp\\surr_rates_svc\\CurrRatesService.db",
+    "data_file_name": "C:\\temp\\curr_rates_svc\\CurrRatesService.db",
     "enable_log_file": true,
     "failed_sched_cron_string": "0 */5 * * * *",
     "fetched_data_type": "json",
-    "log_file_name": "C:\\temp\\surr_rates_svc\\CurrRatesService.log",
-    "sched_file_name": "rates_fetch_sched.json"
+    "log_file_name": "C:\\temp\\curr_rates_svc\\CurrRatesService.log",
+    "sched_file_name": "C:\\temp\\curr_rates_svc\\CurrRatesService.bad"
 }
 ```
 
