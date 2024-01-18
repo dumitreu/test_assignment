@@ -46,7 +46,6 @@ namespace lins {
                     std::string bts{lins::sys_util::backtrace()};
                     std::this_thread::get_id();
                     lins::file_util::save_to_file(std::string{"/tmp/deadlock."} + lins::timespec_wrapper::now().to_mysql_datetime_str(), bts);
-                    //exit(1);
                     char *crash_buff_ptr{(char *)0xdeadbeef};
                     *crash_buff_ptr = 42;
                 }
@@ -84,7 +83,6 @@ namespace lins {
                 if(try_lock_count_.fetch_add(1) > 600'000) {
                     std::string bts{lins::sys_util::backtrace()};
                     lins::file_util::save_to_file(std::string{"/tmp/deadlock."} + lins::timespec_wrapper::now().to_mysql_datetime_str(), bts);
-//                    exit(1);
                     char *crash_buff_ptr{(char *)0xdeadbeef};
                     *crash_buff_ptr = 42;
                 }
@@ -107,7 +105,6 @@ namespace lins {
                 if(try_lock_count_.fetch_add(1) > 600'000) {
                     std::string bts{lins::sys_util::backtrace()};
                     lins::file_util::save_to_file(std::string{"/tmp/deadlock."} + lins::timespec_wrapper::now().to_mysql_datetime_str(), bts);
-//                    exit(1);
                     char *crash_buff_ptr{(char *)0xdeadbeef};
                     *crash_buff_ptr = 42;
                 }
