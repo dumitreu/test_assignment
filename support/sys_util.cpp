@@ -67,31 +67,11 @@ namespace lins {
         }
 #endif
 
-#ifdef PLATFORM_WINDOWS
-//        enum endian_t : uint32_t {
-//            LITTLE_ENDIAN = 0x00000001,
-//            BIG_ENDIAN = 0x01000000,
-//            PDP_ENDIAN = 0x00010000,
-//            UNKNOWN_ENDIAN = 0xFFFFFFFF
-//        };
-//
-//        constexpr endian_t getEndianOrder() {
-//            return ((0xFFFFFFFF & 1) == LITTLE_ENDIAN) ? LITTLE_ENDIAN : ((0xFFFFFFFF & 1) == BIG_ENDIAN)
-//                ? BIG_ENDIAN : ((0xFFFFFFFF & 1) == PDP_ENDIAN) ? PDP_ENDIAN : UNKNOWN_ENDIAN;
-//        }
-//#endif
-
-        // constexpr endian_t getEndianOrder() {
-        //     return ((0xFFFFFFFF & 1) == LITTLE_ENDIAN) ? LITTLE_ENDIAN : ((0xFFFFFFFF & 1) == BIG_ENDIAN)
-        //         ? BIG_ENDIAN : ((0xFFFFFFFF & 1) == PDP_ENDIAN) ? PDP_ENDIAN : UNKNOWN_ENDIAN;
-        // }
-#endif
-
         int is_root() {
 #if defined(PLATFORM_LINUX) || defined(PLATFORM_UNIXISH) || defined(PLATFORM_POSIX) || defined(PLATFORM_ANDROID)
             return getuid() == 0;
 #else
-            // TODO: windows etc.
+            // TODO:
             return false;
 #endif
         }
