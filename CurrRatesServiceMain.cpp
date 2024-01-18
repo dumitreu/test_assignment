@@ -202,11 +202,6 @@ int _tmain (int argc, TCHAR *argv[]) {
                 print_install_usage(argc, argv);
                 return 1;
             }
-            //if (!log_file_name_given) {
-            //    std::cout << "invalid log file path" << std::endl;
-            //    print_install_usage(argc, argv);
-            //    return 1;
-            //}
             if (!fail_file_name_given) {
                 std::cout << "invalid failures file path" << std::endl;
                 print_install_usage(argc, argv);
@@ -280,9 +275,7 @@ VOID WINAPI ServiceMain (DWORD argc, LPTSTR *argv) {
             OutputDebugString(_T("CurrRatesService: ServiceMain: SetServiceStatus returned error"));
         }
 
-        /*
-         * Perform tasks neccesary to start the service here
-         */
+        // Perform tasks neccesary to start the service here
         OutputDebugString(_T("CurrRatesService: ServiceMain: Performing Service Start Operations"));
 
         // Create stop event to wait on later.
