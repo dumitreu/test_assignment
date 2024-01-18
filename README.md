@@ -63,6 +63,5 @@ years of data collecting will not be a problem in terms of performance.
 ## Used 3rd party sources
 
  - OpenSSL library (TLS connection to the server)
- - OpenSSL library (TLS connection to the server)
  - SIMDJSON library (JSON parsing vectorized acceleration)
  - WinReg (C++ Wrapper Around Windows Registry C API)
