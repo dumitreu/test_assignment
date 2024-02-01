@@ -36,14 +36,6 @@ namespace {
             tv->tv_sec = (long)(tmpres / 1000000UL);
             tv->tv_usec = (long)(tmpres % 1000000UL);
         }
-        //if (NULL != tz) {
-        //    if (!tzflag) {
-        //        _tzset();
-        //        tzflag++;
-        //    }
-        //    tz->tz_minuteswest = _timezone / 60;
-        //    tz->tz_dsttime = _daylight;
-        //}
         return 0;
     }
 
@@ -123,8 +115,6 @@ namespace lins {
             res /= 1e9L;
             res += t_.tv_sec;
             return res;
-            //            return (long double)t_.tv_sec +
-            //                   ((long double)t_.tv_nsec) / 1000000000.0L;
         }
 
 
@@ -161,12 +151,6 @@ namespace lins {
             result.t_.tv_nsec = right_now.tv_usec;
             result.t_.tv_nsec *= 1000UL;
             return result;
-
-            //SYSTEMTIME st;
-            //GetLocalTime(&st);
-            //timespec_wrapper result;
-            //SystemTimeToFileTime(&st, &result.t_);
-            //return result;
         }
 
         static timespec_wrapper gmtnow() noexcept {
@@ -220,22 +204,6 @@ namespace lins {
             return *this;
         }
 
-        //        operator const struct timespec&() const {
-        //            return t_;
-        //        }
-
-        //        operator struct timespec&() {
-        //            return t_;
-        //        }
-
-        //        const struct timespec *operator&() const {
-        //            return &t_;
-        //        }
-
-        //        struct timespec *operator&() {
-        //            return &t_;
-        //        }
-
         const struct timespec& ts() const {
             return t_;
         }
@@ -250,7 +218,6 @@ namespace lins {
             long double subseconds{ fsecs - secs };
 
             std::stringstream ss;
-            //struct tm* tmp{ std::localtime(&(t_.tv_sec)) };
             struct tm* tmp{ _localtime64(&(t_.tv_sec)) };
             ss << tmp->tm_year + 1900 << '-' << std::setfill('0')
                 << std::setfill('0') << std::setw(2) << static_cast<int>(tmp->tm_mon + 1) << '-'
@@ -306,7 +273,6 @@ namespace lins {
 
             return ss.str();
         }
-
 
         static timespec_wrapper date_gmtoffset(timespec_wrapper const& d) noexcept {
             timespec_wrapper result;
@@ -474,5 +440,3 @@ namespace lins {
     static const timespec_wrapper eternity{ static_cast<time_t>(0x7fff'ffff'ffff'ffffLL), static_cast<long>(0) };
 
 }
-
-
