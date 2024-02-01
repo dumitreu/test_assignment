@@ -4,15 +4,15 @@
 
 namespace lins {
 
-    template<typename T, std::size_t SIZE>
+    template<typename T, std::size_t CAPACITY>
     class ring_buffer {
-        static_assert(SIZE > 0, "SIZE must be non-zero number");
+        static_assert(CAPACITY > 0, "CAPACITY must be non-zero number");
         class iter {
         public:
-            typedef T value_type;
-            typedef ptrdiff_t  difference_type;
-            typedef T *pointer;
-            typedef T &reference;
+            using value_type = T;
+            using difference_type = ptrdiff_t;
+            using pointer = T *;
+            using reference = T &;
 
             iter(iter const &) = default;
             iter(iter &&) = default;
@@ -79,10 +79,10 @@ namespace lins {
 
         class const_iter {
         public:
-            typedef T value_type;
-            typedef ptrdiff_t  difference_type;
-            typedef T *pointer;
-            typedef T &reference;
+            using value_type = T;
+            using difference_type = ptrdiff_t;
+            using pointer = T *;
+            using reference = T &;
 
             const_iter(const_iter const &) = default;
             const_iter(const_iter &&) = default;
@@ -153,19 +153,17 @@ namespace lins {
 
         ring_buffer(ring_buffer &&that) {
             for(std::size_t i{0}; i < that.size_; ++i) {
-                new(buff() + wrp_idx(i)) T{};
-                std::swap(buff()[wrp_idx(i)], that[i]);
+                new(buff() + wrp_idx(i)) T(std::move(that[i]));
                 ++size_;
             }
-            that.size_ = 0;
+            that.clear();
         }
 
         ring_buffer &operator=(ring_buffer const &that) {
             if(&that != this) {
                 clear();
                 for(std::size_t i{0}; i < that.size_; ++i) {
-                    new(buff() + wrp_idx(i)) T{};
-                    buff()[wrp_idx(i)] = that.buff()[that.wrp_idx(i)];
+                    new(buff() + wrp_idx(i)) T(that[i]);
                     ++size_;
                 }
             }
@@ -175,13 +173,11 @@ namespace lins {
         ring_buffer &operator=(ring_buffer &&that) {
             if(&that != this) {
                 clear();
-                pos_ = that.pos_;
                 for(std::size_t i{0}; i < that.size_; ++i) {
-                    buff()[wrp_idx(i)] = std::move(that.buff()[that.wrp_idx(i)]);
+                    new(buff() + wrp_idx(i)) T(std::move(that[i]));
                     ++size_;
                 }
-                that.size_ = 0;
-                that.pos_ = 0;
+                that.clear();
             }
             return *this;
         }
@@ -203,7 +199,7 @@ namespace lins {
         }
 
         std::size_t constexpr capacity() const noexcept {
-            return SIZE;
+            return CAPACITY;
         }
 
         std::size_t size() const noexcept {
@@ -211,38 +207,45 @@ namespace lins {
         }
 
         void push_back(T const &val) {
-            if(size_ == SIZE) {
-                buff()[pos_].~T();
-            }
-            new(buff() + wrp_idx(size_++)) T{val};
-            if(size_ > SIZE) {
+            if(size_ == CAPACITY) {
+                if constexpr (std::is_copy_assignable<T>::value) {
+                    buff()[pos_] = val;
+                } else {
+                    buff()[pos_].~T();
+                    new(buff() + pos_) T(val);
+                }
                 pos_ = wrp_idx(1);
-                size_ = SIZE;
+            } else {
+                new(buff() + wrp_idx(size_++)) T(val);
             }
         }
 
         void push_back(T &&val) {
-            if(size_ == SIZE) {
-                buff()[pos_].~T();
-            }
-            new(buff() + wrp_idx(size_)) T{};
-            std::swap(buff()[wrp_idx(size_)], val);
-            ++size_;
-            if(size_ > SIZE) {
-                pos_ = (pos_ + 1) % SIZE;
-                size_ = SIZE;
+            if(size_ == CAPACITY) {
+                if constexpr (std::is_move_assignable<T>::value) {
+                    buff()[pos_] = std::move(val);
+                } else {
+                    buff()[pos_].~T();
+                    new(buff() + pos_) T(std::move(val));
+                }
+                pos_ = wrp_idx(1);
+            } else {
+                new(buff() + wrp_idx(size_++)) T(std::move(val));
             }
         }
 
         template<typename ...ARGS>
         void emplace_back(ARGS &&...args) {
-            if(size_ == SIZE) {
-                buff()[pos_].~T();
-            }
-            new(buff() + wrp_idx(size_++)) T{std::forward<ARGS>(args)...};
-            if(size_ > SIZE) {
+            if(size_ == CAPACITY) {
+                if constexpr (std::is_move_assignable<T>::value) {
+                    buff()[pos_] = T{std::forward<ARGS>(args)...};
+                } else {
+                    buff()[pos_].~T();
+                    new(buff() + pos_) T(std::forward<ARGS>(args)...);
+                }
                 pos_ = wrp_idx(1);
-                size_ = SIZE;
+            } else {
+                new(buff() + wrp_idx(size_++)) T(std::forward<ARGS>(args)...);
             }
         }
 
@@ -283,48 +286,50 @@ namespace lins {
         }
 
         T &front() {
-            if(size()) {
+            if(!empty()) {
                 return buff()[pos_];
             }
             throw std::runtime_error{"buffer is empty"};
         }
 
         T &back() {
-            if(size()) {
+            if(!empty()) {
                 return buff()[wrp_idx(size_ - 1)];
             }
             throw std::runtime_error{"buffer is empty"};
         }
 
         T const &front() const {
-            if(size()) {
+            if(!empty()) {
                 return buff()[pos_];
             }
             throw std::runtime_error{"buffer is empty"};
         }
 
         T const &back() const {
-            if(size()) {
+            if(!empty()) {
                 return buff()[wrp_idx(size_ - 1)];
             }
             throw std::runtime_error{"buffer is empty"};
         }
 
         T pop_front() {
-            if(size() > 0) {
-                size_--;
-                auto org_pos{pos_};
+            if(!empty()) {
+                T res{std::move(buff()[pos_])};
+                buff()[pos_].~T();
                 pos_ = wrp_idx(1);
-                return std::move(buff()[org_pos]);
+                --size_;
+                return res;
             } else {
                 throw std::runtime_error{"the buffer is empty"};
             }
         }
 
         T pop_back() {
-            if(size() > 0) {
-                size_--;
-                return std::move(buff()[wrp_idx(size_)]);
+            if(!empty()) {
+                T res{std::move(buff()[wrp_idx(size_ - 1)])};
+                buff()[wrp_idx(--size_)].~T();
+                return res;
             } else {
                 throw std::runtime_error{"the buffer is empty"};
             }
@@ -340,10 +345,11 @@ namespace lins {
         }
 
         std::size_t wrp_idx(std::size_t indx) const {
-            return (pos_ + indx) % SIZE;
+            return (pos_ + indx) % CAPACITY;
         }
 
-        std::uint8_t buf_[sizeof(T) * SIZE]{0};
+    private:
+        std::uint8_t buf_[sizeof(T) * CAPACITY]{0};
         std::size_t pos_{0};
         std::size_t size_{0};
     };
