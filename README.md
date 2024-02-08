@@ -12,7 +12,7 @@ to the
 
 registry value.
 
-Here is the example of configuration file:
+Here is the example of configuration file (which is generated automatically during service installation process):
 
 ```
 {
