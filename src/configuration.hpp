@@ -134,10 +134,10 @@ public:
         cron_string_ = "0 0 6 * * *";
         failed_sched_cron_string_ = "0 */5 * * * *";
         fetched_data_type_ = "json";
-        data_file_name_ = "currency_rates.json";
-        sched_file_name_ = "rates_fetch_sched.json";
-        enable_log_file_ = false;
-        log_file_name_ = "cur_rates_svc.log";
+        data_file_name_ = "CurrRatesService.db";
+        sched_file_name_ = "CurrRatesService.bad";
+        enable_log_file_ = true;
+        log_file_name_ = "CurrRatesService.log";
     }
 
     INLINE_GETTER_SETTER(std::string, cron_string, cron_string_)

@@ -93,11 +93,6 @@
     #include <fcntl.h>
     #include <unistd.h>
     #include <stdlib.h>
-//    #if TARGET_OS_IPHONE
-//    #elif TARGET_IPHONE_SIMULATOR
-//    #elif TARGET_OS_MAC
-//    #else
-//    #endif
 #elif defined(__ANDROID__)
 #define PLATFORM_ANDROID
     #if !defined(_XOPEN_SOURCE) || _XOPEN_SOURCE < 500
