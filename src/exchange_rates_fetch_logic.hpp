@@ -162,7 +162,7 @@ private:
         bool processed{false};
         try {
             std::string url{api_queries_composer::given_date_rates(date, config()--->fetched_data_type())};
-            LOG << "requested url: " << url << std::endl;
+            LOG << "requested url: " << url << " for date " << date << std::endl;
             auto resp{http::Request{url}.send()};
             if(resp.status.code == 200) {
                 LOG << "remote server response: " << resp.status.code << " searching content-type header..." << std::endl;
@@ -179,6 +179,7 @@ private:
                                     if(is_valid_currencies_array(curr_data)) {
                                         LOG << "body data is a valid JSON" << std::endl;
                                         strg_--->add(curr_data);
+                                        LOG << "flushing db to file: " << config()--->data_file_name() << std::endl;
                                         strg_--->save(config()--->data_file_name());
                                         processed = true;
                                         break;

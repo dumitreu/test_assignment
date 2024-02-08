@@ -29,8 +29,10 @@ public:
 
     void save(std::string const &file_name) noexcept {
         try {
+            LOG << "storage saving data to file " << file_name << std::endl;
             lins::file_util::save_to_file(file_name, data_--->serialize(false));
-        } catch (...) {
+        } catch (std::exception const &e) {
+            LOG << "storage saving error " << e.what() << std::endl;
         }
     }
 

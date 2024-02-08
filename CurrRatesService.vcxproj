@@ -120,7 +120,6 @@
     <ClInclude Include="support\time\windows\timespec_wrapper.hpp" />
     <ClInclude Include="src\api_queries_composer.hpp" />
     <ClInclude Include="src\configuration.hpp" />
-    <ClInclude Include="src\croncpp.h" />
     <ClInclude Include="src\exchange_rates_fetch_logic.hpp" />
     <ClInclude Include="src\fetch_schedule.hpp" />
     <ClInclude Include="src\globals.hpp" />

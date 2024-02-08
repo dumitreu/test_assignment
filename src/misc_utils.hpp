@@ -23,7 +23,7 @@ static bool valid_dotted_date(std::string const &dot_date, lins::timespec_wrappe
             int y{(int)lins::str_util::atoi(str_list[2])};
 
             std::stringstream ss{};
-            ss << std::setfill('0') << std::setw(4) << y << "-" << std::setw(2) << m << "-" << d;
+            ss << std::setfill('0') << std::setw(4) << y << "-" << std::setw(2) << m << "-" << std::setw(2) << d;
             std::string ctl_date{ss.str()};
             lins::timespec_wrapper chck{ctl_date};
             if(chck.day() == d && chck.month() == m && chck.year() == y) {
@@ -45,7 +45,7 @@ static std::string dotted_date_to_yyyymmdd(std::string const &dot_date) {
         lins::timespec_wrapper contained_val{};
         if(valid_dotted_date(dot_date, &contained_val)) {
             std::stringstream ss{};
-            ss << std::setfill('0') << std::setw(4) << contained_val.year() << std::setw(2) << contained_val.month() << contained_val.day();
+            ss << std::setfill('0') << std::setw(4) << contained_val.year() << std::setw(2) << contained_val.month() << std::setw(2) << contained_val.day();
             res = ss.str();
         }
     } catch (...) {
@@ -92,7 +92,7 @@ static int current_year() {
 static std::string date_right_now() {
     std::stringstream res{};
     lins::timespec_wrapper tsw{lins::timespec_wrapper::now()};
-    res << std::setfill('0') << std::setw(4) << tsw.year() << std::setw(2) << tsw.month() << tsw.day();
+    res << std::setfill('0') << std::setw(4) << tsw.year() << std::setw(2) << tsw.month() << std::setw(2) << tsw.day();
     return res.str();
 }
 

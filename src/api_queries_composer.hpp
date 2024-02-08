@@ -25,7 +25,6 @@ public:
         return format::JSON;
     }
 
-
     static std::string current_date_rates(std::string const &fmt_str = "json") {
         format fmt{str_format(fmt_str)};
         std::string res{"https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange"};
@@ -49,6 +48,7 @@ public:
             switch(fmt) {
                 case format::JSON:
                     ss << "&json";
+                    break;
                 case format::XML:
                     break;
                 default:
