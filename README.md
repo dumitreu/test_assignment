@@ -51,10 +51,13 @@ Rates fetching is scheduled in configuration file
 
 If service is failed to fetch rates data from the remote, it schedules fetching attempts into the special separate file mentioned as "sched_file_name" in the configuration which is scanned by "failed_sched_cron_string" schedule attempting to retry fetching currency exchange rates data from server.
 
-For now, the only format supported is JSON for everything data processing and exchange. The benefit is that provided json implementation is hardware accelerated so enabled to parse near 2 GB JSON text per second, so even many years of data collecting will not be a problem in terms of performance.
+For now, the only format supported is JSON for data processing and exchange. Provided json implementation is hardware accelerated so enabled to parse near 2 GB of JSON text per second, so even many years of data collecting will not be a problem in the terms of performance.
+
+## "support" folder
+The "support" folder is my own code which is actually part used by this application, directly or via included headers
 
 ## Used 3rd party sources
 
- - OpenSSL library (TLS connection to the server)
+ - OpenSSL library (TLS connection to the NBU server providing API)
  - SIMDJSON library (JSON parsing vectorized acceleration)
  - WinReg (C++ Wrapper Around Windows Registry C API)
