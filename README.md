@@ -36,21 +36,20 @@ where
 - "enable_log_file": switches logging
 - "log_file_name": log file path
 
-You can edit config file while service is running and the service will update values from config file. By modifying config values you can vary program behaviour. For example, you can turn logging on and off.
+You can edit config file while service is running and the service will update values from config file. By modifying config values you can vary program behaviour. For example, you can turn logging on and off, change periodic events schedule.
 
 Checking log file you can monitor current application activity.
 
 Actual data is stored in json data file which contains two sections:
 
-    - currencies dictionary
-    - exchange rates grouped by date
+    - currencies dictionary (which is automatically maintained during service work)
+    - exchange rates grouped by date (as the subobjects)
     
-inside of the top-level object.
+inside of the top-level object of the Database JSON document.
 
 Rates fetching is scheduled in configuration file
 
-If service is failed to fetch rates data from remote, it schedules fetching attempt into special file mentioned as "sched_file_name" in configuration which
-is scanned by "failed_sched_cron_string" schedule in attempt to retry fetching currency exchange rates data from server.
+If service is failed to fetch rates data from the remote, it schedules fetching attempts into the special separate file mentioned as "sched_file_name" in the configuration which is scanned by "failed_sched_cron_string" schedule attempting to retry fetching currency exchange rates data from server.
 
 For now, the only format supported is JSON for everything data processing and exchange. The benefit is that provided json implementation is hardware accelerated so enabled to parse near 2 GB JSON text per second, so even many years of data collecting will not be a problem in terms of performance.
 
