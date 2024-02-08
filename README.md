@@ -1,7 +1,8 @@
 # Test Assignment
 
 ## Application Deployment
-Application binaries and batch files to manage service installation/state are provided in  folder "dist". You can also find README.txt there
+Application binaries and batch files to manage service installation/state are provided in  folder "dist". You can also find README.txt there.
+In order to install a service you should copy the whole contents of the "dist" folder into any desireable place (folder) on your disk (for example, "D:\currency_fetcher" which should be available for write), change directory to that new location and, in command prompt of console execute install.bat and then start.bat. This will install, activate and start currency download service.
 
 ## Functioning
 During installation, configuration file is created and path to it is written
