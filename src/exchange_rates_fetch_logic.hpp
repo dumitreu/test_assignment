@@ -205,7 +205,6 @@ private:
 
 private:
     bool initialized_{false};
-    // lins::thread_safe_wrapper_stl<configuration> cfg_{};
     lins::thread_safe_wrapper_stl<storage> strg_{};
     std::thread cron_thread_{};
     std::thread fetch_scheduled_thread_{};
