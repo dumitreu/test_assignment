@@ -126,6 +126,9 @@ namespace lins {
             const std::string &name() const {
                 return path_;
             }
+            const std::string &full_path() const {
+                return path_;
+            }
             lins::timespec_wrapper create_time() const;
             lins::timespec_wrapper access_time() const;
             lins::timespec_wrapper modify_time() const;
@@ -186,7 +189,7 @@ namespace lins {
 #else
         template<typename T>
         void for_dir_tree(const std::string &dir_path, T apply, bool recursive = true) {
-            std::string local_dir_path = dir_path;
+            std::string local_dir_path{dir_path};
             if(local_dir_path.size() == 0) {
                 local_dir_path = std::string(".") + native_path_separator<std::string>::val();
             }
@@ -196,13 +199,13 @@ namespace lins {
             if(!dir_exists(local_dir_path)) {
                 return;
             }
-            struct dirent *dir_entry_p;
-            DIR *dir_p = 0;
+            struct dirent *dir_entry_p{nullptr};
+            DIR *dir_p{nullptr};
             for(dir_p = opendir(local_dir_path.c_str()); dir_p && (dir_entry_p = readdir(dir_p)); ) {
                 if(memcmp(dir_entry_p->d_name, ".", 1) == 0 || memcmp(dir_entry_p->d_name, "..", 2) == 0) {
                     continue;
                 }
-                std::string p = local_dir_path + dir_entry_p->d_name;
+                std::string p{local_dir_path + dir_entry_p->d_name};
                 dir_entry aplly_entry;
                 if(dir_exists(p)) {
                     p += native_path_separator<std::string>::val();

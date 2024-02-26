@@ -562,7 +562,7 @@ namespace lins {
             alignas(64) std::atomic_bool busy_{false};
             alignas(64) std::atomic<int> work_or_stop_pending_{0};
             alignas(64) lins::ring_buffer<std::int64_t, 16> time_intervals_{};
-            alignas(64) mutable lins::dbg_shared_mutex times_mtp_{};
+            alignas(64) mutable std::shared_mutex times_mtp_{};
             alignas(64) std::atomic<long double> overall_work_time_{0.0L};
             alignas(64) std::atomic<long double> curr_workload_{0.0L};
             alignas(64) std::atomic_bool has_worked_since_spawning_{false};
@@ -589,7 +589,7 @@ namespace lins {
         std::atomic<std::size_t> size_approx_{0};
         mutable std::mutex evt_mtp_{};
         std::condition_variable evt_{};
-        mutable lins::dbg_shared_mutex processors_mtp_{};
+        mutable std::shared_mutex processors_mtp_{};
         std::list<worker> processors_{};
 
         std::atomic<long double> avg_enqueueing_speed_{0.0L};
@@ -598,7 +598,7 @@ namespace lins {
         std::atomic<long double> total_work_time_{0.0L};
 
         std::vector<double> threads_workloads_{};
-        mutable lins::dbg_shared_mutex threads_workloads_mtp_{};
+        mutable std::shared_mutex threads_workloads_mtp_{};
     };
 
 
@@ -628,7 +628,7 @@ namespace lins {
         std::atomic<std::size_t> approx_size_{0};
         std::condition_variable evt_{};
         mutable std::mutex evt_mtp_{};
-        lins::dbg_mutex processors_mtp_{};
+        std::mutex processors_mtp_{};
         std::vector<std::thread> processors_{};
     };
 

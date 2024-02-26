@@ -1,7 +1,7 @@
 #include "commondefs.hpp"
 #include "file_util.hpp"
 #include "str_util.hpp"
-#if defined(PLATFORM_LINUX)
+#if defined(PLATFORM_LINUX) || defined(PLATFORM_ANDROID)
 #if !defined(_XOPEN_SOURCE) && _XOPEN_SOURCE < 500
 #define _XOPEN_SOURCE 500
 #endif
@@ -133,7 +133,7 @@ namespace lins {
         std::string home_dir(bool end_with_path_sep) {
             std::string final_result{};
 
-        #if defined(__linux)
+        #if defined(PLATFORM_LINUX) || defined(PLATFORM_ANDROID)
             struct passwd pwd;
             struct passwd *result;
             size_t bufsize = 16384;
@@ -163,7 +163,7 @@ namespace lins {
 
 
         std::string config_dir() {
-        #if defined(PLATFORM_LINUX)
+        #if defined(PLATFORM_LINUX) || defined(PLATFORM_ANDROID)
             std::string home = home_dir();
             return  home.empty() ? std::string() : home + "/.config";
         #elif defined(PLATFORM_WINDOWS)
@@ -177,7 +177,7 @@ namespace lins {
         }
 
         std::string cache_dir() {
-#if defined(PLATFORM_LINUX)
+#if defined(PLATFORM_LINUX) || defined(PLATFORM_ANDROID)
             std::string home = home_dir();
             return  home.empty() ? std::string() : home + "/.cache";
 #elif defined(PLATFORM_WINDOWS)
@@ -261,7 +261,7 @@ namespace lins {
 
         std::vector<std::string> get_dir_list(const std::string &dir) {
             std::vector<std::string> files;
-        #ifdef PLATFORM_LINUX
+        #if defined(PLATFORM_LINUX) || defined(PLATFORM_ANDROID)
             DIR *dp;
             struct dirent *dirp;
             if((dp  = opendir(dir.c_str())) == 0) {
@@ -381,7 +381,7 @@ namespace lins {
 #endif
 
         bool dir_exists(const std::string &file_name) {
-        #if defined(PLATFORM_LINUX) || defined(PLATFORM_UNIXISH) || defined(PLATFORM_APPLE)
+        #if defined(PLATFORM_LINUX) || defined(PLATFORM_UNIXISH) || defined(PLATFORM_APPLE) || defined(PLATFORM_ANDROID)
             struct stat sb;
 
             if(stat(file_name.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode)) {
@@ -397,7 +397,7 @@ namespace lins {
         }
 
         bool file_exists(const std::string &file_name) {
-        #if defined(PLATFORM_LINUX) || defined(PLATFORM_APPLE)
+        #if defined(PLATFORM_LINUX) || defined(PLATFORM_APPLE) || defined(PLATFORM_ANDROID)
             struct stat sb;
 
             if(stat(file_name.c_str(), &sb) == 0 && S_ISREG(sb.st_mode)) {
@@ -411,7 +411,7 @@ namespace lins {
         }
 
         std::string real_path(const std::string &p) {
-        #if defined(PLATFORM_LINUX) || defined(PLATFORM_APPLE)
+        #if defined(PLATFORM_LINUX) || defined(PLATFORM_APPLE) || defined(PLATFORM_ANDROID)
             std::string res;
             if(p.size()) {
                 std::vector<char> resolved(p.size() * 2);
@@ -432,7 +432,7 @@ namespace lins {
         EXCEPTION_CLASS(file_size_getting_error, "file size examining error")
 
         uint64_t file_size(const std::string &fn) {
-        #if defined(PLATFORM_LINUX) || defined(PLATFORM_APPLE)
+        #if defined(PLATFORM_LINUX) || defined(PLATFORM_APPLE) || defined(PLATFORM_ANDROID)
             struct stat statbuf;
             if (stat(fn.c_str(), &statbuf) == -1) {
                 throw stat_calling_error();
@@ -486,7 +486,7 @@ namespace lins {
         }
 
         bool mk_dir(const std::string &dir) {
-        #if defined(PLATFORM_LINUX) || defined(PLATFORM_APPLE)
+        #if defined(PLATFORM_LINUX) || defined(PLATFORM_APPLE) || defined(PLATFORM_ANDROID)
             char tmp[256];
             char * p = nullptr;
             size_t len;
@@ -511,7 +511,7 @@ namespace lins {
         }
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////
-#if defined(PLATFORM_LINUX)
+#if defined(PLATFORM_LINUX) || defined(PLATFORM_ANDROID)
         static int do_remove(const char *fpath, const struct stat64 */*sb*/, int tflag, struct FTW */*ftwbuf*/) {
             if(tflag == FTW_F) {
                 ::unlink(fpath);
@@ -522,7 +522,7 @@ namespace lins {
         }
 #endif
         bool rm_dir(const std::string &path) {
-#if defined(PLATFORM_LINUX)
+#if defined(PLATFORM_LINUX) || defined(PLATFORM_ANDROID)
             if (::nftw64(path.c_str(), do_remove, 100, FTW_DEPTH | FTW_PHYS) == -1) {
                 return false;
             }
@@ -564,7 +564,7 @@ namespace lins {
             if(dir_exists(fn)) {
                 return rm_dir(fn);
             } else if(file_exists(fn)) {
-        #if defined(PLATFORM_LINUX) || defined(PLATFORM_APPLE)
+        #if defined(PLATFORM_LINUX) || defined(PLATFORM_APPLE) || defined(PLATFORM_ANDROID)
                 return ::unlink(fn.c_str()) == 0;
         #elif defined(PLATFORM_WINDOWS)
                 return DeleteFileA(fn.c_str());
@@ -580,14 +580,14 @@ namespace lins {
         }
 
         std::vector<std::uint8_t> load_from_file(const std::string &fn, std::int64_t how_much) {
-            std::deque<std::uint8_t> result;
+            std::deque<std::uint8_t> result{};
             if(!file_exists(fn)) {
                 throw file_loading_error{};
             }
-            std::ifstream file;
+            std::ifstream file{};
             file.open(fn.c_str(), std::ios_base::in | std::ios_base::binary);
             if(file.is_open()) {
-                int c;
+                int c{};
                 std::int64_t total_read{0LL};
                 while((c = file.get()) != -1) {
                     result.push_back(static_cast<std::uint8_t>(c));

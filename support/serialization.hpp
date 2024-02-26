@@ -9,18 +9,21 @@
 
 namespace lins {
 
+    class serializer;
+    class serial_reader;
+
 #pragma pack(push, 1)
     namespace details_serial {
 
         class bad_serial_cast: public std::bad_cast {
         public:
-            bad_serial_cast(const std::string &err): msg_{err} {
+            bad_serial_cast(std::string const &err): msg_{err} {
             }
 
             ~bad_serial_cast() noexcept {
             }
 
-            const char* what() const noexcept {
+            char const *what() const noexcept {
                 return msg_.c_str();
             }
 
@@ -28,8 +31,8 @@ namespace lins {
             std::string msg_;
         };
 
-
-        static std::size_t n_size(std::uint8_t first) {
+#if !defined(USE_64_BIT_SERIALIZATION)
+        static std::uint64_t n_size(std::uint8_t first) {
             if(first < 0x80) { return 1; }
             if(((first & 0xe0) == 0xc0)) { return 2; }
             if(((first & 0xf0) == 0xe0)) { return 3; }
@@ -39,53 +42,53 @@ namespace lins {
             return 0;
         }
 
-        static std::uint64_t m_to_n(const std::uint8_t *mbuf, int *increment) {
+        static std::uint64_t m_to_n(const std::uint8_t *mbuf, uint64_t *increment) {
             if(mbuf[0] < 0x80) {
-                if(increment) *increment = 1;
+                if(increment) { *increment = 1; }
                 return mbuf[0] & 0xff;
             }
             if(((mbuf[0] & 0xe0) == 0xc0)) {
-                if(increment) *increment = 2;
+                if(increment) { *increment = 2; }
                 return (((std::uint64_t)mbuf[0] & 0x1f) << 6) |
-                        (((std::uint64_t)mbuf[1] & 0x3f));
+                       (((std::uint64_t)mbuf[1] & 0x3f));
             }
             if(((mbuf[0] & 0xf0) == 0xe0)) {
-                if(increment) *increment = 3;
+                if(increment) { *increment = 3; }
                 return (((std::uint64_t)mbuf[0] & 0x0f) << 12) |
-                        (((std::uint64_t)mbuf[1] & 0x3f) << 6) |
-                        (((std::uint64_t)mbuf[2] & 0x3f));
+                       (((std::uint64_t)mbuf[1] & 0x3f) << 6) |
+                       (((std::uint64_t)mbuf[2] & 0x3f));
             }
             if(((mbuf[0] & 0xf8) == 0xf0)) {
-                if(increment) *increment = 4;
+                if(increment) { *increment = 4; }
                 return (((std::uint64_t)mbuf[0] & 0x07) << 18) |
-                        (((std::uint64_t)mbuf[1] & 0x3f) << 12) |
-                        (((std::uint64_t)mbuf[2] & 0x3f) << 6) |
-                        (((std::uint64_t)mbuf[3] & 0x3f));
+                       (((std::uint64_t)mbuf[1] & 0x3f) << 12) |
+                       (((std::uint64_t)mbuf[2] & 0x3f) << 6) |
+                       (((std::uint64_t)mbuf[3] & 0x3f));
             }
             if(((mbuf[0] & 0xfc) == 0xf8)) {
-                if(increment) *increment = 5;
+                if(increment) { *increment = 5; }
                 return (((std::uint64_t)mbuf[0] & 0x03) << 24) |
-                        (((std::uint64_t)mbuf[1] & 0x3f) << 18) |
-                        (((std::uint64_t)mbuf[2] & 0x3f) << 12) |
-                        (((std::uint64_t)mbuf[3] & 0x3f) << 6) |
-                        (((std::uint64_t)mbuf[4] & 0x3f));
+                       (((std::uint64_t)mbuf[1] & 0x3f) << 18) |
+                       (((std::uint64_t)mbuf[2] & 0x3f) << 12) |
+                       (((std::uint64_t)mbuf[3] & 0x3f) << 6) |
+                       (((std::uint64_t)mbuf[4] & 0x3f));
             }
             if(((mbuf[0] & 0xfe) == 0xfc)) {
-                if(increment) *increment = 6;
+                if(increment) { *increment = 6; }
                 return (((std::uint64_t)mbuf[0] & 0x01) << 30) |
-                        (((std::uint64_t)mbuf[1] & 0x3f) << 24) |
-                        (((std::uint64_t)mbuf[2] & 0x3f) << 18) |
-                        (((std::uint64_t)mbuf[3] & 0x3f) << 12) |
+                       (((std::uint64_t)mbuf[1] & 0x3f) << 24) |
+                       (((std::uint64_t)mbuf[2] & 0x3f) << 18) |
+                       (((std::uint64_t)mbuf[3] & 0x3f) << 12) |
                        (((std::uint64_t)mbuf[4] & 0x3f) << 6) |
-                        (((std::uint64_t)mbuf[5] & 0x3f));
+                       (((std::uint64_t)mbuf[5] & 0x3f));
             }
-            if(increment) *increment = 0;
+            if(increment) { *increment = 0; }
             return mbuf[0];
         }
 
-        static int n_to_m(std::uint32_t c, std::uint8_t *mbuf) {
+        static std::uint64_t n_to_m(std::uint32_t c, std::uint8_t *mbuf) {
             if(c <= 0x7f) {
-                mbuf[0] = (std::uint8_t) c & 0x7f;
+                mbuf[0] = (std::uint8_t)c & 0x7f;
                 return 1;
             } else  if(c <= 0x7ff) {
                 mbuf[0] = (std::uint8_t)((c >> 6) & 0x1f) | 0xc0;
@@ -120,176 +123,257 @@ namespace lins {
             }
         }
 
-        static int unumber_to_mem(std::size_t s, void *bytes) {
+#else
+
+        static std::uint64_t n_size(std::uint8_t first) {
+            first = ~first;
+            first |= first >> 1;
+            first |= first >> 2;
+            first |= first >> 4;
+            return 9 - lins::bit_util::num_of_set_bits(first);
+        }
+
+        static std::uint64_t m_to_n(std::uint8_t const *mbuf, std::uint64_t *increment) {
+            std::uint64_t b0{static_cast<std::uint64_t>(mbuf[0])};
+            if(b0 <= 0x7f) {
+                if(increment) { *increment = 1; }
+                return b0;
+            }
+            if(((b0 & 0xc0) == 0x80)) {
+                if(increment) { *increment = 2; }
+                return ((b0 & 0x3f) << 8) |
+                       ((std::uint64_t)mbuf[1]);
+            }
+            if(((b0 & 0xe0) == 0xc0)) {
+                if(increment) { *increment = 3; }
+                return ((b0 & 0x1f) << 16) |
+                       (((std::uint64_t)mbuf[1]) << 8) |
+                       ((std::uint64_t)mbuf[2]);
+            }
+            if(((b0 & 0xf0) == 0xe0)) {
+                if(increment) { *increment = 4; }
+                return ((b0 & 0x0f) << 24) |
+                       (((std::uint64_t)mbuf[1]) << 16) |
+                       (((std::uint64_t)mbuf[2]) << 8) |
+                       ((std::uint64_t)mbuf[3]);
+            }
+            if(((b0 & 0xf8) == 0xf0)) {
+                if(increment) { *increment = 5; }
+                return ((b0 & 0x07) << 32) |
+                       (((std::uint64_t)mbuf[1]) << 24) |
+                       (((std::uint64_t)mbuf[2]) << 16) |
+                       (((std::uint64_t)mbuf[3]) << 8) |
+                       ((std::uint64_t)mbuf[4]);
+            }
+            if(((b0 & 0xfc) == 0xf8)) {
+                if(increment) { *increment = 6; }
+                return ((b0 & 0x03) << 40) |
+                       (((std::uint64_t)mbuf[1]) << 32) |
+                       (((std::uint64_t)mbuf[2]) << 24) |
+                       (((std::uint64_t)mbuf[3]) << 16) |
+                       (((std::uint64_t)mbuf[4]) << 8) |
+                       ((std::uint64_t)mbuf[5]);
+            }
+            if(((b0 & 0xfe) == 0xfc)) {
+                if(increment) { *increment = 7; }
+                return ((b0 & 0x01) << 48) |
+                       (((std::uint64_t)mbuf[1]) << 40) |
+                       (((std::uint64_t)mbuf[2]) << 32) |
+                       (((std::uint64_t)mbuf[3]) << 24) |
+                       (((std::uint64_t)mbuf[4]) << 16) |
+                       (((std::uint64_t)mbuf[5]) << 8) |
+                       ((std::uint64_t)mbuf[6])
+                    ;
+            }
+            if(b0 == 0xfe) {
+                if(increment) { *increment = 8; }
+                return (((std::uint64_t)mbuf[1]) << 48) |
+                       (((std::uint64_t)mbuf[2]) << 40) |
+                       (((std::uint64_t)mbuf[3]) << 32) |
+                       (((std::uint64_t)mbuf[4]) << 24) |
+                       (((std::uint64_t)mbuf[5]) << 16) |
+                       (((std::uint64_t)mbuf[6]) << 8)  |
+                       ((std::uint64_t)mbuf[7])
+                    ;
+            }
+            if(b0 == 0xff) {
+                if(increment) { *increment = 9; }
+                return (((std::uint64_t)mbuf[1]) << 56) |
+                       (((std::uint64_t)mbuf[2]) << 48) |
+                       (((std::uint64_t)mbuf[3]) << 40) |
+                       (((std::uint64_t)mbuf[4]) << 32) |
+                       (((std::uint64_t)mbuf[5]) << 24) |
+                       (((std::uint64_t)mbuf[6]) << 16) |
+                       (((std::uint64_t)mbuf[7]) << 8)  |
+                       ((std::uint64_t)mbuf[8])
+                    ;
+            }
+            if(increment) { *increment = 0; }
+            return b0;
+        }
+
+        static std::uint64_t n_to_m(std::uint64_t c, std::uint8_t *mbuf) {
+            if(c <= 0x7fULL) {
+                mbuf[0] = (std::uint8_t)c;
+                return 1;
+            } else if(c <= 0x3f'ffULL) {
+                mbuf[0] = (std::uint8_t)((c >> 8) | 0x80);
+                mbuf[1] = (std::uint8_t)(c & 0xff);
+                return 2;
+            } else if(c <= 0x1f'ff'ffULL) {
+                mbuf[0] = (std::uint8_t)((c >> 16) | 0xc0);
+                mbuf[1] = (std::uint8_t)((c >> 8) & 0xff);
+                mbuf[2] = (std::uint8_t)(c & 0xff);
+                return 3;
+            } else if(c <= 0x0f'ff'ff'ffULL) {
+                mbuf[0] = (std::uint8_t)((c >> 24) | 0xe0);
+                mbuf[1] = (std::uint8_t)((c >> 16) & 0xff);
+                mbuf[2] = (std::uint8_t)((c >> 8) & 0xff);
+                mbuf[3] = (std::uint8_t)(c & 0xff);
+                return 4;
+            } else if(c <= 0x07'ff'ff'ff'ffULL) {
+                mbuf[0] = (std::uint8_t)((c >> 32) | 0xf0);
+                mbuf[1] = (std::uint8_t)((c >> 24) & 0xff);
+                mbuf[2] = (std::uint8_t)((c >> 16) & 0xff);
+                mbuf[3] = (std::uint8_t)((c >> 8) & 0xff);
+                mbuf[4] = (std::uint8_t)(c & 0xff);
+                return 5;
+            } else if(c <= 0x03'ff'ff'ff'ff'ffULL) {
+                mbuf[0] = (std::uint8_t)((c >> 40) | 0xf8);
+                mbuf[1] = (std::uint8_t)((c >> 32) & 0xff);
+                mbuf[2] = (std::uint8_t)((c >> 24) & 0xff);
+                mbuf[3] = (std::uint8_t)((c >> 16) & 0xff);
+                mbuf[4] = (std::uint8_t)((c >> 8) & 0xff);
+                mbuf[5] = (std::uint8_t)(c & 0xff);
+                return 6;
+            } else if(c <= 0x01'ff'ff'ff'ff'ff'ffULL) {
+                mbuf[0] = (std::uint8_t)((c >> 48) | 0xfc);
+                mbuf[1] = (std::uint8_t)((c >> 40) & 0xff);
+                mbuf[2] = (std::uint8_t)((c >> 32) & 0xff);
+                mbuf[3] = (std::uint8_t)((c >> 24) & 0xff);
+                mbuf[4] = (std::uint8_t)((c >> 16) & 0xff);
+                mbuf[5] = (std::uint8_t)((c >> 8) & 0xff);
+                mbuf[6] = (std::uint8_t)(c & 0xff);
+                return 7;
+            } else if(c <= 0xff'ff'ff'ff'ff'ff'ffULL) {
+                mbuf[0] = 0xfe;
+                mbuf[1] = (std::uint8_t)((c >> 48) & 0xff);
+                mbuf[2] = (std::uint8_t)((c >> 40) & 0xff);
+                mbuf[3] = (std::uint8_t)((c >> 32) & 0xff);
+                mbuf[4] = (std::uint8_t)((c >> 24) & 0xff);
+                mbuf[5] = (std::uint8_t)((c >> 16) & 0xff);
+                mbuf[6] = (std::uint8_t)((c >> 8) & 0xff);
+                mbuf[7] = (std::uint8_t)(c & 0xff);
+                return 8;
+            } else {
+                mbuf[0] = 0xff;
+                mbuf[1] = (std::uint8_t)((c >> 56) & 0xff);
+                mbuf[2] = (std::uint8_t)((c >> 48) & 0xff);
+                mbuf[3] = (std::uint8_t)((c >> 40) & 0xff);
+                mbuf[4] = (std::uint8_t)((c >> 32) & 0xff);
+                mbuf[5] = (std::uint8_t)((c >> 24) & 0xff);
+                mbuf[6] = (std::uint8_t)((c >> 16) & 0xff);
+                mbuf[7] = (std::uint8_t)((c >> 8) & 0xff);
+                mbuf[8] = (std::uint8_t)(c & 0xff);
+                return 9;
+            }
+        }
+
+#endif
+
+        static std::uint64_t unumber_to_mem(std::uint64_t s, void *bytes) {
             return n_to_m(s, reinterpret_cast<std::uint8_t *>(bytes));
         }
 
-        static int n_bytes(const std::size_t num) {
+        static std::uint64_t n_bytes(std::uint64_t num) {
             std::uint8_t mbuf[16];
             return unumber_to_mem(num, mbuf);
         }
 
-        static int mem_to_unumber(void const *bytes, std::size_t &num) {
-            int incr;
+        static std::uint64_t mem_to_unumber(void const *bytes, std::uint64_t &num) {
+            std::uint64_t incr{0};
             num = m_to_n(reinterpret_cast<std::uint8_t const *>(bytes), &incr);
             return incr;
         }
 
 
         class size_surrounded_buffer final {
-        private:
-            std::size_t size_size() const {
-                std::size_t size_val;
-                return mem_to_unumber(buffer_start(), size_val);
-            }
+            friend class lins::serializer;
+            friend class lins::serial_reader;
+            friend class serialized_data_iter;
 
         public:
-            std::size_t size() const {
-                std::size_t size_val;
+            using size_type = std::uint64_t;
+
+        public:
+            size_type size() const {
+                std::uint64_t size_val{};
                 mem_to_unumber(buffer_start(), size_val);
                 return size_val;
             }
 
-            void *data() {
-                return buffer_start() + size_size();
-            }
-
-            void const *data() const {
-                return buffer_start() + size_size();
-            }
-
-            void set_sizes(std::size_t s) {
-                unumber_to_mem(s, buffer_start());
-                unumber_to_mem(s, reinterpret_cast<std::uint8_t *>(data()) + s);
-                lins::bit_util::inplace_swap(reinterpret_cast<std::uint8_t *>(data()) + s, size_size());
-            }
-
-            void set_data(const void *d, std::size_t s) {
-                if(d && s) {
-                    set_sizes(s);
-#if USE_MANUAL_MEMORY_COPYING
-                    // this satisfies clang in the sense of operands sizes
-                    // but memcpy() is probably faster because of possibly optimized implementation
-                    // so let memcpy() operates by default
-
-                    std::uint8_t *dd{reinterpret_cast<std::uint8_t *>(data())};
-                    for(std::size_t i{0}; i < s; ++i) {
-                        dd[i] = reinterpret_cast<std::uint8_t const *>(d)[i];
-                    }
-#else
-                    std::memcpy(data(), d, s);
-#endif
-                }
-            }
-
-            bool valid(std::uint8_t const *e) const {
-                std::uint8_t const *b{buffer_start()};
-                std::intptr_t const whole_size_limit{(std::intptr_t)((std::uintptr_t)e - (std::uintptr_t)b)};
-                if(whole_size_limit > 0) {
-                    std::size_t const ss{n_size(*b)};
-                    if((std::int64_t)(ss * 2) <= whole_size_limit) {
-                        std::size_t s{size()};
-                        if((std::int64_t)(ss * 2 + s) <= whole_size_limit) {
-                            std::uint8_t const *bs_last_ptr{b + ss * 2 + s - 1};
-                            std::size_t const bss{n_size(*bs_last_ptr)};
-                            if(bss == ss) {
-                                std::uint8_t buff[16]{};
-                                std::uint8_t const *bs_ptr{b + ss + s};
-                                if(ss > 1) { std::memcpy(buff, bs_ptr, ss); } else { buff[0] = *bs_ptr; }
-                                std::size_t bs{};
-                                if(ss > 1) { lins::bit_util::inplace_swap(buff, ss); }
-                                mem_to_unumber(buff, bs);
-                                if(bs == s) {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
-                return false;
-            }
-
-            size_surrounded_buffer *prev() const {
-                std::uint8_t const *prev_last_byte_ptr{buffer_start() - 1};
-                std::size_t prev_size_size{n_size(*prev_last_byte_ptr)};
-
-                std::uint8_t const *prev_last_size_ptr{buffer_start() - prev_size_size};
-
-                std::uint8_t buff[16];
-                std::memcpy(buff, prev_last_size_ptr, prev_size_size);
-                lins::bit_util::inplace_swap(buff, prev_size_size);
-
-                std::size_t prev_size;
-                mem_to_unumber(buff, prev_size);
-                return reinterpret_cast<size_surrounded_buffer *>(const_cast<std::uint8_t *>(buffer_start()) - (prev_size_size * 2 + prev_size));
-            }
-
-            size_surrounded_buffer *next() const {
-                return (size_surrounded_buffer *)(buffer_start() + (size_size() * 2 + size()));
-            }
-
             std::int64_t as_number() const {
-                std::size_t s{size()};
+                std::uint64_t s{size()};
                 if(s == sizeof(std::int64_t)) {
-                    return *reinterpret_cast<const int64_t *>(data());
+                    return *reinterpret_cast<int64_t const *>(data());
                 } else if(s == sizeof(std::int32_t)) {
-                    return static_cast<std::int64_t>(*reinterpret_cast<const std::int32_t *>(data()));
+                    return static_cast<std::int64_t>(*reinterpret_cast<std::int32_t const *>(data()));
                 } else if(s == sizeof(std::int16_t)) {
-                    return static_cast<std::int64_t>(*reinterpret_cast<const std::int16_t *>(data()));
+                    return static_cast<std::int64_t>(*reinterpret_cast<std::int16_t const *>(data()));
                 } else if(s == sizeof(std::int8_t)) {
-                    return static_cast<std::int64_t>(*reinterpret_cast<const std::int8_t *>(data()));
+                    return static_cast<std::int64_t>(*reinterpret_cast<std::int8_t const *>(data()));
                 }
                 throw bad_serial_cast{"Invalid content for being a number"};
             }
 
-            std::uint64_t as_unumber() const {
-                std::size_t s{size()};
+            size_type as_unumber() const {
+                std::uint64_t s{size()};
                 if(s == sizeof(std::uint64_t)) {
-                    return *reinterpret_cast<const std::uint64_t *>(data());
+                    return *reinterpret_cast<std::uint64_t const *>(data());
                 } else if(s == sizeof(std::uint32_t)) {
-                    return static_cast<std::uint64_t>(*reinterpret_cast<const std::uint32_t *>(data()));
+                    return static_cast<std::uint64_t>(*reinterpret_cast<std::uint32_t const *>(data()));
                 } else if(s == sizeof(std::uint16_t)) {
-                    return static_cast<uint64_t>(*reinterpret_cast<const std::uint16_t *>(data()));
+                    return static_cast<uint64_t>(*reinterpret_cast<std::uint16_t const *>(data()));
                 } else if(s == sizeof(std::uint8_t)) {
-                    return static_cast<std::uint64_t>(*reinterpret_cast<const std::uint8_t *>(data()));
+                    return static_cast<std::uint64_t>(*reinterpret_cast<std::uint8_t const *>(data()));
                 }
                 throw bad_serial_cast{"Invalid content for being a number"};
             }
 
             std::string_view as_string() const {
-                std::size_t s{size()};
+                std::uint64_t s{size()};
                 if(s >= sizeof(char)) {
-                    return std::string_view{reinterpret_cast<const char *>(data()), s};
+                    return std::string_view{reinterpret_cast<char const *>(data()), static_cast<std::size_t>(s)};
                 } else {
                     throw bad_serial_cast{"Invalid content for being a string"};
                 }
             }
 
             std::wstring_view as_wstring() const {
-                std::size_t s{size()};
+                std::uint64_t s{size()};
                 if(s >= sizeof(wchar_t)) {
                     if(s % sizeof(wchar_t)) {
                         throw bad_serial_cast{"Invalid content for being a unicode string"};
                     }
-                    return std::wstring_view{reinterpret_cast<wchar_t const *>(data()), s / sizeof(wchar_t)};
+                    return std::wstring_view{reinterpret_cast<wchar_t const *>(data()), static_cast<std::size_t>(s / sizeof(wchar_t))};
                 } else {
                     return std::wstring_view{};
                 }
             }
 
-            std::vector<std::uint8_t> as_bytevec() const {
+            lins::bytevec as_bytevec() const {
                 if(size()) {
-                    return std::vector<std::uint8_t>{
+                    return lins::bytevec{
                         reinterpret_cast<std::uint8_t const *>(data()),
                         reinterpret_cast<std::uint8_t const *>(data()) + size()
                     };
                 } else {
-                    return std::vector<std::uint8_t>{};
+                    return lins::bytevec{};
                 }
             }
 
             template<typename U>
-            const U &as() const {
+            U const &as() const {
                 if(size() != sizeof(U)) {
                     throw bad_serial_cast{"Invalid content cast in serialized data"};
                 }
@@ -304,37 +388,119 @@ namespace lins {
                 return *reinterpret_cast<U *>(data());
             }
 
+            void const *data() const {
+                return buffer_start() + size_size();
+            }
+
+        private:
+            void *data() {
+                return buffer_start() + size_size();
+            }
+
+            void set_sizes(size_type s) {
+                unumber_to_mem(s, buffer_start());
+                unumber_to_mem(s, reinterpret_cast<std::uint8_t *>(data()) + s);
+                lins::bit_util::inplace_swap(reinterpret_cast<std::uint8_t *>(data()) + s, size_size());
+            }
+
+            void set_data(void const *d, size_type s) {
+                if(d && s) {
+                    set_sizes(s);
+#if USE_MANUAL_MEMORY_COPYING
+                    // this satisfies clang in the sense of operands sizes
+                    // but memcpy() is probably faster because of possibly optimized implementation
+                    // so let memcpy() operates by default
+
+                    std::uint8_t *dd{reinterpret_cast<std::uint8_t *>(data())};
+                    for(std::uint64_t i{0}; i < s; ++i) {
+                        dd[i] = reinterpret_cast<std::uint8_t const *>(d)[i];
+                    }
+#else
+                    std::memcpy(data(), d, s);
+#endif
+                }
+            }
+
+            size_type size_size() const {
+                std::uint64_t size_val{};
+                return mem_to_unumber(buffer_start(), size_val);
+            }
+
+            bool valid(std::uint8_t const *e) const {
+                std::uint8_t const *b{buffer_start()};
+                std::intptr_t const whole_size_limit{(std::intptr_t)e - (std::intptr_t)b};
+                if(whole_size_limit > 0) {
+                    std::uint64_t const ss{n_size(*b)};
+                    if((std::int64_t)(ss * 2) <= whole_size_limit) {
+                        std::uint64_t s{size()};
+                        if((std::int64_t)(ss * 2 + s) <= whole_size_limit) {
+                            std::uint8_t const *bs_last_ptr{b + ss * 2 + s - 1};
+                            std::uint64_t const bss{n_size(*bs_last_ptr)};
+                            if(bss == ss) {
+                                std::uint8_t buff[16]{};
+                                std::uint8_t const *bs_ptr{b + ss + s};
+                                if(ss > 1) { std::memcpy(buff, bs_ptr, ss); } else { buff[0] = *bs_ptr; }
+                                std::uint64_t bs{};
+                                if(ss > 1) { lins::bit_util::inplace_swap(buff, ss); }
+                                mem_to_unumber(buff, bs);
+                                if(bs == s) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+
+            size_surrounded_buffer *prev() const {
+                std::uint8_t const *prev_last_byte_ptr{buffer_start() - 1};
+                std::uint64_t prev_size_size{n_size(*prev_last_byte_ptr)};
+
+                std::uint8_t const *prev_last_size_ptr{buffer_start() - prev_size_size};
+
+                std::uint8_t buff[16];
+                std::memcpy(buff, prev_last_size_ptr, prev_size_size);
+                lins::bit_util::inplace_swap(buff, prev_size_size);
+
+                std::uint64_t prev_size{0};
+                mem_to_unumber(buff, prev_size);
+                return reinterpret_cast<size_surrounded_buffer *>(const_cast<std::uint8_t *>(buffer_start()) - (prev_size_size * 2 + prev_size));
+            }
+
+            size_surrounded_buffer *next() const {
+                return (size_surrounded_buffer *)(buffer_start() + (size_size() * 2 + size()));
+            }
+
         private:
             std::uint8_t *buffer_start() { return reinterpret_cast<std::uint8_t *>(this); }
             std::uint8_t const *buffer_start() const { return reinterpret_cast<std::uint8_t const *>(this); }
         };
 
 
-        class serialized_data_iter final/*: public std::iterator<std::bidirectional_iterator_tag, size_surrounded_buffer>*/ {
+        class serialized_data_iter final {
         public:
-            serialized_data_iter():
-                p_{nullptr},
-                whole_data_{nullptr},
-                data_size_{0}
-            {
-            }
+            using size_type = std::uint64_t;
 
-            serialized_data_iter(const size_surrounded_buffer *x,
-                                 const std::uint8_t *whole_data,
-                                 std::size_t data_size):
+        public:
+            serialized_data_iter() = default;
+
+            serialized_data_iter(size_surrounded_buffer const *x,
+                                 std::uint8_t const *whole_data,
+                                 size_type data_size):
                 p_{x},
                 whole_data_{whole_data},
                 data_size_{data_size}
             {
             }
 
-            serialized_data_iter(const serialized_data_iter &that) = default;
+            serialized_data_iter(serialized_data_iter const &) = default;
 
-            serialized_data_iter &operator=(const serialized_data_iter &that) = default;
+            serialized_data_iter &operator=(serialized_data_iter const &) = default;
 
-            serialized_data_iter(serialized_data_iter &&that) = default;
+            serialized_data_iter(serialized_data_iter &&) = default;
 
-            serialized_data_iter &operator=(serialized_data_iter &&that) = default;
+            serialized_data_iter &operator=(serialized_data_iter &&) = default;
 
             ~serialized_data_iter() = default;
 
@@ -412,35 +578,35 @@ namespace lins {
                 return *this;
             }
 
-            bool operator<(const serialized_data_iter &rhs) const {
+            bool operator<(serialized_data_iter const &rhs) const {
                 return p_ < rhs.p_;
             }
 
-            bool operator<=(const serialized_data_iter &rhs) const {
+            bool operator<=(serialized_data_iter const &rhs) const {
                 return p_ <= rhs.p_;
             }
 
-            bool operator>(const serialized_data_iter &rhs) const {
+            bool operator>(serialized_data_iter const &rhs) const {
                 return p_ > rhs.p_;
             }
 
-            bool operator>=(const serialized_data_iter &rhs) const {
+            bool operator>=(serialized_data_iter const &rhs) const {
                 return p_ >= rhs.p_;
             }
 
-            bool operator==(const serialized_data_iter &rhs) const {
+            bool operator==(serialized_data_iter const &rhs) const {
                 return p_ == rhs.p_;
             }
 
-            bool operator!=(const serialized_data_iter &rhs) const {
+            bool operator!=(serialized_data_iter const &rhs) const {
                 return p_ != rhs.p_;
             }
 
-            const size_surrounded_buffer &operator*() const {
+            size_surrounded_buffer const &operator*() const {
                 return *p_;
             }
 
-            const size_surrounded_buffer *operator->() const {
+            size_surrounded_buffer const *operator->() const {
                 return p_;
             }
 
@@ -461,52 +627,57 @@ namespace lins {
         private:
             size_surrounded_buffer const *p_{nullptr};
             std::uint8_t const *whole_data_{nullptr};
-            std::size_t data_size_{0};
+            std::uint64_t data_size_{0};
         };
     }
 
 
     class serializer final {
     public:
-        typedef std::vector<std::uint8_t>::size_type size_type;
-        typedef details_serial::serialized_data_iter iterator;
-        typedef details_serial::serialized_data_iter const_iterator;
+        using size_type = std::uint64_t;
+        using iterator = details_serial::serialized_data_iter;
+        using const_iterator = details_serial::serialized_data_iter;
 
     public:
         serializer() = default;
+        serializer(serializer const &) = default;
+        serializer(serializer &&) = default;
+        serializer &operator=(serializer const &) = default;
+        serializer &operator=(serializer &&) = default;
+        ~serializer() = default;
 
-        serializer(void const *data, std::size_t size) {
+        serializer(void const *data, size_type size) {
             if(data && size) {
-                serialized_data_ = std::vector<std::uint8_t>{
-                    reinterpret_cast<const std::uint8_t *>(data),
-                    reinterpret_cast<const std::uint8_t *>(data) + size
+                serialized_data_ = lins::bytevec{
+                    reinterpret_cast<std::uint8_t const *>(data),
+                    reinterpret_cast<std::uint8_t const *>(data) + size
                 };
             }
         }
 
-        serializer(const std::vector<std::uint8_t> &data):
+        serializer(lins::bytevec const &data):
             serialized_data_{data} {
         }
 
-        serializer(const std::vector<std::uint8_t> &&data):
+        serializer(lins::bytevec &&data):
             serialized_data_{std::move(data)} {
         }
 
-        serializer &operator=(std::vector<std::uint8_t> const &data) {
+        serializer &operator=(lins::bytevec const &data) {
             serialized_data_ = data;
             return *this;
         }
 
-        serializer &operator=(std::vector<std::uint8_t> &&data) {
+        serializer &operator=(lins::bytevec &&data) {
             serialized_data_ = std::move(data);
             return *this;
         }
 
-        std::vector<std::uint8_t> const &data_vec() const {
+        lins::bytevec const &data_vec() const {
             return serialized_data_;
         }
 
-        std::vector<std::uint8_t> &&take_vec() {
+        lins::bytevec &&take_vec() {
             return std::move(serialized_data_);
         }
 
@@ -530,38 +701,44 @@ namespace lins {
             return serialized_data_.data();
         }
 
-        void push_back(const void *d, std::size_t s) {
-            std::size_t new_data_pos{size()};
-            int s_size{details_serial::n_bytes(s)};
-            serialized_data_.resize(new_data_pos + s + s_size * 2);
+        void push_back(void const *d, size_type s) {
+            std::uint64_t new_data_pos{size()};
+            serialized_data_.resize(new_data_pos + s + details_serial::n_bytes(s) * 2);
             details_serial::size_surrounded_buffer *buf{
-                    (details_serial::size_surrounded_buffer *)
-                        ((reinterpret_cast<char *>(serialized_data_.data())) + new_data_pos)};
+                reinterpret_cast<details_serial::size_surrounded_buffer *>(
+                    (reinterpret_cast<char *>(serialized_data_.data())) + new_data_pos
+                )
+            };
             buf->set_data(d, s);
         }
 
-        void push_back(const std::string &str) {
+        void push_back(std::string const &str) {
             push_back(str.c_str(), str.size());
         }
 
-        void push_back(const char *str) {
+        void push_back(char const *str) {
             push_back(str, strlen(str));
         }
 
-        void push_back(const std::wstring &str) {
+        void push_back(std::wstring const &str) {
             push_back(str.data(), str.size() * sizeof(wchar_t));
         }
 
-        void push_back(const wchar_t *str) {
+        void push_back(wchar_t const *str) {
             push_back(str, (::wcslen(str)) * sizeof(wchar_t));
         }
 
-        void push_back(const std::vector<std::uint8_t> &vec) {
+        void push_back(lins::bytevec const &vec) {
             push_back(vec.data(), vec.size());
         }
 
+        template<size_type N>
+        void push_back(std::array<std::uint8_t, N> const &arr) {
+            push_back(arr.data(), arr.size());
+        }
+
         template<typename PUSHED_T>
-        void push_back(const PUSHED_T &d) {
+        void push_back(PUSHED_T const &d) {
             if constexpr (sys_util::little_endian()) {
                 push_back(&d, sizeof(d));
             } else {
@@ -570,11 +747,33 @@ namespace lins {
             }
         }
 
+        iterator operator[](size_type indx) {
+            size_type i{0};
+            for(iterator it{begin()}; it != end(); ++it, ++i) {
+                if(i == indx) {
+                    return it;
+                }
+            }
+            throw std::range_error{"index out of range"};
+        }
+
+        const_iterator operator[](size_type indx) const {
+            size_type i{0};
+            for(const_iterator it{cbegin()}; it != cend(); ++it, ++i) {
+                if(i == indx) {
+                    return it;
+                }
+            }
+            throw std::range_error{"index out of range"};
+        }
+
         iterator begin() {
             iterator res{
-                 reinterpret_cast<details_serial::size_surrounded_buffer *>(serialized_data_.data()),
-                 serialized_data_.data(),
-                 serialized_data_.size()
+                reinterpret_cast<details_serial::size_surrounded_buffer *>(
+                    serialized_data_.data()
+                ),
+                serialized_data_.data(),
+                serialized_data_.size()
             };
             return res;
         }
@@ -616,57 +815,63 @@ namespace lins {
         }
 
         template<typename PUSHED_T>
-        serializer &operator<<(const PUSHED_T &v) {
+        serializer &operator<<(PUSHED_T const &v) {
             push_back(v);
             return *this;
         }
 
-        serializer &operator<<(const std::string &str) {
+        serializer &operator<<(std::string const &str) {
             push_back(str);
             return *this;
         }
 
-        serializer &operator<<(const char *str) {
+        serializer &operator<<(char const *str) {
             push_back(str);
             return *this;
         }
 
-        serializer &operator<<(const std::wstring &str) {
+        serializer &operator<<(std::wstring const &str) {
             push_back(str);
             return *this;
         }
 
-        serializer &operator<<(const wchar_t *str) {
+        serializer &operator<<(wchar_t const *str) {
             push_back(str);
             return *this;
         }
 
-        serializer &operator<<(const std::vector<std::uint8_t> &vec) {
+        serializer &operator<<(lins::bytevec const &vec) {
             push_back(vec);
             return *this;
         }
 
+        template<size_type N>
+        serializer &operator<<(std::array<std::uint8_t, N> const &arr) {
+            push_back(arr.data(), arr.size());
+            return *this;
+        }
+
     private:
-        std::vector<std::uint8_t> serialized_data_{};
+        lins::bytevec serialized_data_{};
     };
 
 
     class serial_reader final {
     public:
-        typedef std::vector<std::uint8_t>::size_type size_type;
-        typedef details_serial::serialized_data_iter const_iterator;
+        using size_type = std::uint64_t;
+        using const_iterator = details_serial::serialized_data_iter;
 
     public:
         serial_reader() = default;
 
-        serial_reader(void const *data, std::size_t data_size):
-            data_{reinterpret_cast<const std::uint8_t *>(data)},
+        serial_reader(void const *data, size_type data_size):
+            data_{reinterpret_cast<std::uint8_t const *>(data)},
             data_size_{data_size}
         {
         }
 
-        void assign(void const *data, std::size_t data_size) {
-            data_ = reinterpret_cast<const std::uint8_t *>(data);
+        void assign(void const *data, size_type data_size) {
+            data_ = reinterpret_cast<std::uint8_t const *>(data);
             data_size_ = data_size;
         }
 
@@ -679,26 +884,35 @@ namespace lins {
         }
 
         const_iterator begin() const {
-            return const_iterator{reinterpret_cast<const details_serial::size_surrounded_buffer *>(data()), data(), size()};
+            return const_iterator{
+                reinterpret_cast<details_serial::size_surrounded_buffer const *>(data()), data(), size()
+            };
         }
 
         const_iterator end() const {
-            return const_iterator{reinterpret_cast<const details_serial::size_surrounded_buffer *>(data() + size()), data(), size()};
+            return const_iterator{
+                reinterpret_cast<details_serial::size_surrounded_buffer const *>(data() + size()), data(), size()
+            };
         }
 
         const_iterator cbegin() const {
-            return const_iterator{reinterpret_cast<const details_serial::size_surrounded_buffer *>(data()), data(), size()};
+            return const_iterator{
+                reinterpret_cast<details_serial::size_surrounded_buffer const *>(data()), data(), size()
+            };
         }
 
         const_iterator cend() const {
-            return const_iterator{reinterpret_cast<const details_serial::size_surrounded_buffer *>(data() + size()), data(), size()};
+            return const_iterator{
+                reinterpret_cast<details_serial::size_surrounded_buffer const *>(data() + size()), data(), size()
+            };
         }
 
     private:
-        const std::uint8_t *data_{nullptr};
-        std::size_t data_size_{0};
+        std::uint8_t const *data_{nullptr};
+        std::uint64_t data_size_{0};
     };
 #pragma pack(pop)
+
 
     class concatenator {
     public:
@@ -709,11 +923,11 @@ namespace lins {
         void add(char const *v) { add(std::string{v}); }
         template<typename T>
         void add(std::vector<T> const &v) { for(auto &&item: v) { add(item); } }
-        template<typename T, std::size_t N>
+        template<typename T, std::uint64_t N>
         void add(std::array<T, N> const &v) { for(auto &&item: v) { add(item); } }
         void clear() { v_.clear(); }
-        std::vector<std::uint8_t> const &data() const { return v_; }
-        std::vector<std::uint8_t> &data() { return v_; }
+        lins::bytevec const &data() const { return v_; }
+        lins::bytevec &data() { return v_; }
 
         template<typename T>
         friend concatenator &operator<<(concatenator &cat, T const v) { cat.add(v); return cat; }
@@ -721,11 +935,11 @@ namespace lins {
         friend concatenator &operator<<(concatenator &cat, char *v) { cat.add(v); return cat; }
         template<typename T>
         friend concatenator &operator<<(concatenator &cat, std::vector<T> const &v) { cat.add(v); return cat; }
-        template<typename T, std::size_t N>
+        template<typename T, std::uint64_t N>
         friend concatenator &operator<<(concatenator &cat, std::array<T, N> const &v) { for(auto &&item: v) { cat.add(item); } return cat; }
 
     private:
-        std::vector<std::uint8_t> v_{};
+        lins::bytevec v_{};
     };
 
 }

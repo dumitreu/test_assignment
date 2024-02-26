@@ -2,7 +2,7 @@
 #include "sys_util.hpp"
 #include "file_util.hpp"
 #include "str_util.hpp"
-#if defined(PLATFORM_LINUX)
+#if defined(PLATFORM_LINUX) || defined(PLATFORM_ANDROID)
 #include <mntent.h>
 #include <libgen.h>
 #include <arpa/inet.h>
@@ -23,7 +23,7 @@ namespace lins {
 
     namespace sys_util {
 
-#if defined(PLATFORM_LINUX)
+#if defined(PLATFORM_LINUX) || defined(PLATFORM_ANDROID)
         std::string backtrace() {
 #ifdef USE_BACK_TRACE
             unw_cursor_t cursor;
@@ -67,11 +67,31 @@ namespace lins {
         }
 #endif
 
+#ifdef PLATFORM_WINDOWS
+//        enum endian_t : uint32_t {
+//            LITTLE_ENDIAN = 0x00000001,
+//            BIG_ENDIAN = 0x01000000,
+//            PDP_ENDIAN = 0x00010000,
+//            UNKNOWN_ENDIAN = 0xFFFFFFFF
+//        };
+//
+//        constexpr endian_t getEndianOrder() {
+//            return ((0xFFFFFFFF & 1) == LITTLE_ENDIAN) ? LITTLE_ENDIAN : ((0xFFFFFFFF & 1) == BIG_ENDIAN)
+//                ? BIG_ENDIAN : ((0xFFFFFFFF & 1) == PDP_ENDIAN) ? PDP_ENDIAN : UNKNOWN_ENDIAN;
+//        }
+//#endif
+
+        // constexpr endian_t getEndianOrder() {
+        //     return ((0xFFFFFFFF & 1) == LITTLE_ENDIAN) ? LITTLE_ENDIAN : ((0xFFFFFFFF & 1) == BIG_ENDIAN)
+        //         ? BIG_ENDIAN : ((0xFFFFFFFF & 1) == PDP_ENDIAN) ? PDP_ENDIAN : UNKNOWN_ENDIAN;
+        // }
+#endif
+
         int is_root() {
 #if defined(PLATFORM_LINUX) || defined(PLATFORM_UNIXISH) || defined(PLATFORM_POSIX) || defined(PLATFORM_ANDROID)
             return getuid() == 0;
 #else
-            // TODO:
+            // TODO: windows etc.
             return false;
 #endif
         }
@@ -85,7 +105,7 @@ namespace lins {
         }
 
         void mem_info(uint64_t &total_mem, uint64_t &free_mem) {
-#if defined(PLATFORM_LINUX)
+#if defined(PLATFORM_LINUX) || defined(PLATFORM_ANDROID)
             using std::ios_base;
 
             total_mem = 0ll;
@@ -109,7 +129,7 @@ namespace lins {
         }
 
         void mem_usage(uint64_t &vm_usage, uint64_t &resident_set) {
-#if defined(PLATFORM_LINUX)
+#if defined(PLATFORM_LINUX) || defined(PLATFORM_ANDROID)
             using std::ios_base;
             using std::string;
 
@@ -149,7 +169,7 @@ namespace lins {
         }
 
         std::string get_exec_path() {
-#if defined(PLATFORM_LINUX)
+#if defined(PLATFORM_LINUX) || defined(PLATFORM_ANDROID)
             std::size_t dest_len = 1024;
             char path[1024];
             path[0] = 0;
@@ -172,7 +192,7 @@ namespace lins {
 
         std::string host_name() {
             std::string result{};
-#ifdef PLATFORM_LINUX
+#if defined(PLATFORM_LINUX) || defined(PLATFORM_ANDROID)
             struct addrinfo hints, *info, *p;
             int gai_result{0};
 
@@ -214,7 +234,7 @@ namespace lins {
     #else
             return "apple";
     #endif
-#elif defined(PLATFORM_LINUX)
+#elif defined(PLATFORM_LINUX) || defined(PLATFORM_ANDROID)
             struct utsname buf;
             uname(&buf);
             std::string result(buf.sysname);
@@ -232,7 +252,7 @@ namespace lins {
 
         std::string system_vendor() {
             std::string res{};
-#if defined(PLATFORM_LINUX)
+#if defined(PLATFORM_LINUX) || defined(PLATFORM_ANDROID)
             auto vendor_info{lins::file_util::load_from_file("/sys/devices/virtual/dmi/id/sys_vendor")};
             res = lins::str_util::trim(std::string{vendor_info.begin(), vendor_info.end()});
 #endif
@@ -241,7 +261,7 @@ namespace lins {
 
         std::string system_uuid() {
             std::string res{};
-#if defined(PLATFORM_LINUX)
+#if defined(PLATFORM_LINUX) || defined(PLATFORM_ANDROID)
             bool found{false};
             struct mntent *ent;
             FILE *mounts_file;

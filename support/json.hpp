@@ -155,6 +155,7 @@ namespace lins::json {
         object(object &&that) noexcept: v_{std::move(that.v_)}, t_{that.t_} { that.t_ = jo_null; }
         object(char const *v): v_{(std::string{v})}, t_{jo_string} {}
         object(std::string const &v): v_{(v)}, t_{jo_string} {}
+        object(std::string &&v): v_{std::move(v)}, t_{jo_string} {}
         object(std::string_view const &v): v_{(std::string{v})}, t_{jo_string} {}
         object(wchar_t const *v): v_{lins::str_util::to_utf8(v)}, t_{jo_string} {}
         object(std::wstring const &v): v_{lins::str_util::to_utf8(v)}, t_{jo_string} {}
@@ -323,7 +324,7 @@ namespace lins::json {
             }
         }
 
-        std::vector<std::uint8_t> as_bytevec() const {
+        lins::bytevec as_bytevec() const {
             if(is_string()) {
                 return lins::base64_str_to_data(lins::any_cast<std::string>(v_));
             } else {

@@ -645,7 +645,7 @@ namespace http {
                 return result;
             }
 
-            size_t send(const void *data, std::int32_t data_size) {
+            size_t send(void const *data, std::int32_t data_size) {
                 if(secure_) {
                     return BIO_write(web.get(), data, data_size);
                 } else if(sckt_) {

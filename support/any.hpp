@@ -10,7 +10,7 @@ namespace lins {
 
     class bad_any_cast : public std::bad_cast {
     public:
-        virtual const char *what() const noexcept {
+        virtual char const *what() const noexcept {
             return "bad_any_cast";
         }
     };
@@ -19,133 +19,135 @@ namespace lins {
     public:
         any() = default;
 
-        any(const any &item) {
-            if(item.data) {
-                item.data->copy_to(data);
+        any(any const &that) {
+            if(that.data_) {
+                that.data_->copy_to(data_);
             }
         }
 
-        any &operator=(const any &item) {
-            if(&item != this) {
-                any{item}.swap(*this);
+        any &operator=(any const &that) {
+            if(&that != this) {
+                any{that}.swap(*this);
             }
             return *this;
         }
 
-        any(any &&item) noexcept: data(std::move(item.data)) {
+        any(any &&that) noexcept:
+            data_{std::move(that.data_)}
+        {
         }
 
-        any &operator=(any &&item) noexcept {
-            if(this != &item) {
-                data = std::move(item.data);
+        any &operator=(any &&that) noexcept {
+            if(this != &that) {
+                data_ = std::move(that.data_);
             }
             return *this;
         }
 
         ~any() = default;
 
-        void swap(any &item) {
-            data.swap(item.data);
+        void swap(any &that) {
+            data_.swap(that.data_);
         }
 
         template <typename T>
-        any(const T &item) {
-            typedef typename basic_type<T>::type U;
-            data.reset(new derived<U>{item});
+        any(T const &val):
+            data_{std::make_unique<derived<basic_t<T>>>(val)}
+        {
+        }
+
+        template <typename T>
+        any &operator=(T const &val) {
+            any{val}.swap(*this);
+            return *this;
+        }
+
+        template <typename T>
+        any(T &&val) noexcept:
+            data_{std::make_unique<derived<basic_t<T>>>(std::forward<T>(val))}
+        {
+        }
+
+        template <typename T>
+        any &operator=(T &&val) noexcept {
+            any{std::forward<T>(val)}.swap(*this);
+            return *this;
         }
 
         void clear() {
-            data.reset();
+            data_.reset();
         }
 
         template <typename T>
         bool contains() const {
-            typedef typename basic_type<T>::type U;
-            return dynamic_cast<derived<U> *>(data.get()) != 0;
+            return !!dynamic_cast<derived<basic_t<T>> *>(data_.get());
         }
 
-        bool is_empty() const {
-            return data.get() == 0;
+        bool empty() const {
+            return !data_;
         }
 
         template <typename T>
         T &cast_to() {
-            typedef typename basic_type<T>::type U;
-            derived<U> *d = dynamic_cast<derived<U> *>(data.get());
-            if(d == 0) {
-                throw bad_any_cast();
+            derived<basic_t<T>> *d{dynamic_cast<derived<basic_t<T>> *>(data_.get())};
+            if(!d) {
+                throw bad_any_cast{};
             }
-            return d->item;
+            return d->item_;
         }
 
         template <typename T>
-        const T &cast_to() const {
-            typedef typename basic_type<T>::type U;
-            derived<U> *d = dynamic_cast<derived<U> *>(data.get());
-            if(d == 0) {
-                throw bad_any_cast();
+        T const &cast_to() const {
+            derived<basic_t<T>> *d{dynamic_cast<derived<basic_t<T>> *>(data_.get())};
+            if(!d) {
+                throw bad_any_cast{};
             }
-            return d->item;
+            return d->item_;
         }
 
         template <typename T>
         T &as() {
-            typedef typename basic_type<T>::type U;
-            derived<U> *d = dynamic_cast<derived<U> *>(data.get());
-            if(d == 0) {
-                throw bad_any_cast();
-            }
-            return d->item;
+            return cast_to<T>();
         }
 
         template <typename T>
-        const T &as() const {
-            typedef typename basic_type<T>::type U;
-            derived<U> *d = dynamic_cast<derived<U> *>(data.get());
-            if(d == 0) {
-                throw bad_any_cast();
-            }
-            return d->item;
+        T const &as() const {
+            return cast_to<T>();
         }
 
         template <typename T>
         T *as_ptr() noexcept {
-            typedef typename basic_type<T>::type U;
-            derived<U> *d = dynamic_cast<derived<U> *>(data.get());
-            return d ? &(d->item) : 0;
+            derived<basic_t<T>> *d{dynamic_cast<derived<basic_t<T>> *>(data_.get())};
+            return d ? &(d->item_) : 0;
         }
 
         template <typename T>
-        const T *as_ptr() const noexcept {
-            typedef typename basic_type<T>::type U;
-            derived<U> *d = dynamic_cast<derived<U> *>(data.get());
-            return d ? &(d->item) : 0;
+        T const *as_ptr() const noexcept {
+            derived<basic_t<T>> *d{dynamic_cast<derived<basic_t<T>> *>(data_.get())};
+            return d ? &(d->item_) : 0;
         }
 
         template <typename T>
         bool is_of_type() const noexcept {
-            typedef typename basic_type<T>::type U;
-            return dynamic_cast<derived<U> *>(data.get()) != 0;
+            return dynamic_cast<derived<basic_t<T>> *>(data_.get()) != nullptr;
         }
 
         template <typename T>
-        T &get() {
-            typedef typename basic_type<T>::type U;
-            derived<U> *d = dynamic_cast<derived<U> *>(data.get());
-            if(d == 0) {
-                d = new derived<U>();
-                data.reset(d);
+        T &get_or_create() {
+            derived<basic_t<T>> *d{dynamic_cast<derived<basic_t<T>> *>(data_.get())};
+            if(d == nullptr) {
+                data_ = std::make_unique<derived<basic_t<T>>>();
+                d = dynamic_cast<derived<basic_t<T>> *>(data_.get());
             }
-
-            return d->item;
+            return d->item_;
         }
 
         void *ptr() noexcept {
-            return data ? data->ptr() : nullptr;
+            return data_ ? data_->ptr() : nullptr;
         }
 
         const void *ptr() const noexcept {
-            return data ? data->ptr() : nullptr;
+            return data_ ? data_->ptr() : nullptr;
         }
 
     private:
@@ -158,18 +160,19 @@ namespace lins {
 
         template <typename T>
         struct derived: public base {
-            T item;
             derived() {}
-            derived(const T &val): item(val) {}
-            derived(T &&val) noexcept: item(std::move(val)) {}
-            derived(derived &&that) noexcept: item(std::move(that.item)) {}
-            derived &operator=(derived &&that) noexcept { item = std::move(that.item); return *this;}
-            void copy_to (std::unique_ptr<base> &dest) const override { dest.reset(new derived<T>(item)); }
-            void *ptr() override { return &item; }
-            const void *ptr() const override { return &item; }
+            derived(T const &val): item_{val} {}
+            derived(T &&val) noexcept: item_{std::move_if_noexcept(val)} {}
+            derived(derived &&that) noexcept: item_{std::move_if_noexcept(that.item_)} {}
+            derived &operator=(derived &&that) noexcept { item_ = std::move_if_noexcept(that.item_); return *this;}
+            void copy_to (std::unique_ptr<base> &dest) const override { dest = std::make_unique<derived<T>>(item_); }
+            void *ptr() override { return &item_; }
+            void const *ptr() const override { return &item_; }
+
+            T item_{};
         };
 
-        std::unique_ptr<base> data{nullptr};
+        std::unique_ptr<base> data_{nullptr};
     };
 
     inline void swap(any &a, any &b) {

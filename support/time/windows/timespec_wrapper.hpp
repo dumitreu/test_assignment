@@ -440,3 +440,4 @@ namespace lins {
     static const timespec_wrapper eternity{ static_cast<time_t>(0x7fff'ffff'ffff'ffffLL), static_cast<long>(0) };
 
 }
+

@@ -46,6 +46,7 @@ namespace lins {
                     std::string bts{lins::sys_util::backtrace()};
                     std::this_thread::get_id();
                     lins::file_util::save_to_file(std::string{"/tmp/deadlock."} + lins::timespec_wrapper::now().to_mysql_datetime_str(), bts);
+                    //exit(1);
                     char *crash_buff_ptr{(char *)0xdeadbeef};
                     *crash_buff_ptr = 42;
                 }
@@ -83,6 +84,7 @@ namespace lins {
                 if(try_lock_count_.fetch_add(1) > 600'000) {
                     std::string bts{lins::sys_util::backtrace()};
                     lins::file_util::save_to_file(std::string{"/tmp/deadlock."} + lins::timespec_wrapper::now().to_mysql_datetime_str(), bts);
+//                    exit(1);
                     char *crash_buff_ptr{(char *)0xdeadbeef};
                     *crash_buff_ptr = 42;
                 }
@@ -105,6 +107,7 @@ namespace lins {
                 if(try_lock_count_.fetch_add(1) > 600'000) {
                     std::string bts{lins::sys_util::backtrace()};
                     lins::file_util::save_to_file(std::string{"/tmp/deadlock."} + lins::timespec_wrapper::now().to_mysql_datetime_str(), bts);
+//                    exit(1);
                     char *crash_buff_ptr{(char *)0xdeadbeef};
                     *crash_buff_ptr = 42;
                 }
@@ -194,6 +197,77 @@ namespace lins {
     static /*(seconds)*/inline long double curr_timestamp_seconds() noexcept {
         return static_cast<long double>(std::chrono::steady_clock::now().time_since_epoch().count()) / 1'000'000'000.0L;
     }
+
+    class exec_each_nth_time {
+    public:
+        exec_each_nth_time(std::uint64_t nth = 1) {
+            set_nth(nth);
+        }
+
+        template<typename FUNC_T>
+        void may_be_execute(FUNC_T const &f) {
+            if(n_ % nth_ == 0) {
+                f();
+            }
+            ++n_;
+        }
+
+        template<typename FUNC_T>
+        void operator()(FUNC_T const &f) {
+            may_be_execute(f);
+        }
+
+        void set_nth(std::uint64_t nth) {
+            if(nth == 0) {
+                nth = 1;
+            }
+            nth_ = nth;
+        }
+
+    private:
+        std::uint64_t nth_{1};
+        std::uint64_t n_{0};
+    };
+
+    class exec_with_min_timeout {
+    public:
+        exec_with_min_timeout(long double min_timeout_seconds = 0, bool execution_time_gap = false):
+            execution_time_gap_{execution_time_gap}
+        {
+            set_min_timeout(min_timeout_seconds);
+        }
+
+        template<typename FUNC_T>
+        void may_be_execute(FUNC_T const &f) {
+            long double curr{curr_timestamp_seconds()};
+            if(last_time_executed_ == 0 || curr_timestamp_seconds() - last_time_executed_ > min_timeout_seconds_) {
+                f();
+                if(execution_time_gap_) {
+                    last_time_executed_ = curr_timestamp_seconds();
+                } else {
+                    last_time_executed_ = curr;
+                }
+            }
+        }
+
+        template<typename FUNC_T>
+        void operator()(FUNC_T const &f) {
+            may_be_execute(f);
+        }
+
+        void set_min_timeout(long double min_timeout_seconds) {
+            if(min_timeout_seconds < 0) {
+                min_timeout_seconds_ = 0;
+            } else {
+                min_timeout_seconds_ = min_timeout_seconds;
+            }
+        }
+
+    private:
+        bool execution_time_gap_{false};
+        long double min_timeout_seconds_{0};
+        long double last_time_executed_{0};
+    };
 
     template<typename T>
     class thread_safe_wrapper_stl {

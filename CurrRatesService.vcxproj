@@ -110,8 +110,8 @@
     <ClCompile Include="support\terminable.cpp" />
     <ClCompile Include="support\threading.cpp" />
     <ClCompile Include="CurrRatesServiceMain.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\projects\openssl\include;C:\projects\common;%(AdditionalIncludeDirectories);$(_ZVcpkgCurrentInstalledDir)include</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\projects\openssl\include;C:\projects\common;%(AdditionalIncludeDirectories);$(_ZVcpkgCurrentInstalledDir)include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\projects\openssl\include;support;%(AdditionalIncludeDirectories);$(_ZVcpkgCurrentInstalledDir)include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\projects\openssl\include;support;%(AdditionalIncludeDirectories);$(_ZVcpkgCurrentInstalledDir)include</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="src\globals.cpp" />
     <ClCompile Include="src\logging.cpp" />

@@ -22,7 +22,7 @@ namespace lins::net {
 
     bool socket::create() {
         if(ok()) {
-            throw socket_error("create() call on already initialized socket");
+            throw socket_error("socket::create() call on already initialized socket");
         }
         if((sock_fd_ = ::socket(AF_INET, SOCK_STREAM, 0)) > 0) {
             return true;
@@ -49,7 +49,7 @@ namespace lins::net {
                 return true;
             }
         } else {
-            throw socket_error("listen() call on uninitialized socket");
+            throw socket_error("socket::listen() call on uninitialized socket");
         }
         return false;
     }
@@ -95,7 +95,7 @@ namespace lins::net {
                 }
             }
         } else {
-            throw socket_error("connect() call on uninitialized socket");
+            throw socket_error("socket::connect() call on uninitialized socket");
         }
         return false;
     }
@@ -119,12 +119,16 @@ namespace lins::net {
         return result;
     }
 
-    int socket::send(const void *buff, int len) {
+    int socket::send(void const *buff, int len, int flags) {
         if(ok()) {
             if(len <= 0 || !buff) {
                 throw socket_error("wrong arguments in call to socket::send()");
             }
-            return ::send(sock_fd_, reinterpret_cast<const char *>(buff), len, 0);
+            return ::send(
+#ifdef PLATFORM_WINDOWS
+                (SOCKET)
+#endif
+                sock_fd_, reinterpret_cast<char const *>(buff), len, flags);
         } else {
             throw socket_error("socket::send(): socket not ready");
         }
@@ -208,9 +212,21 @@ namespace lins::net {
 #endif
     }
 
+    bool socket::make_nosigpipe() {
+        if(!ok()) {
+            throw socket_error("socket::make_nosigpipe(): socket not ready");
+        }
+#ifdef PLATFORM_APPLE
+        int opt = 1;
+        return ::setsockopt(sock_fd_, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt)) != -1;
+#else
+        return true;
+#endif
+    }
+
     bool socket::set_linger(bool on, int linger_time) {
         if(!ok()) {
-            throw socket_error("socket::make_nodelay(): socket not ready");
+            throw socket_error("socket::set_linger(): socket not ready");
         }
         struct linger sl{};
         sl.l_onoff = on ? 1 : 0;
@@ -313,19 +329,19 @@ namespace lins::net {
     bool socket::set_rcv_timeout(lins::timespec_wrapper const &to, lins::timespec_wrapper &orig_to) {
         bool result{false};
         if(sock_fd_ != -1) {
-#if defined(PLATFORM_LINUX) || defined(PLATFOM_APPLE)
-        struct timeval org_tv{to.seconds(), to.useconds()};
-        socklen_t org_tv_len{0};
-        if(::getsockopt(sock_fd_, SOL_SOCKET, SO_RCVTIMEO, &org_tv, &org_tv_len) == 0) {
-            orig_to = lins::timespec_wrapper{(long double)org_tv.tv_sec + (long double)org_tv.tv_usec / 1'000'000.0L};
-            struct timeval tv{to.seconds(), to.useconds()};
-            if(::setsockopt(sock_fd_, SOL_SOCKET, SO_RCVTIMEO, (char const *)&tv, sizeof(tv))) {
-                result = true;
+#if defined(PLATFORM_LINUX) || defined(PLATFOM_APPLE) || defined(PLATFORM_ANDROID)
+            struct timeval org_tv{};
+            socklen_t org_tv_len{sizeof(org_tv)};
+            if(::getsockopt(sock_fd_, SOL_SOCKET, SO_RCVTIMEO, &org_tv, &org_tv_len) == 0) {
+                orig_to = lins::timespec_wrapper{(long double)org_tv.tv_sec + (long double)org_tv.tv_usec / 1'000'000.0L};
+                struct timeval tv{(time_t)to.seconds(), (long)((to.fseconds() - to.seconds()) * 1000000)};
+                if(::setsockopt(sock_fd_, SOL_SOCKET, SO_RCVTIMEO, (char const *)&tv, sizeof(tv)) == 0) {
+                    result = true;
+                }
             }
-        }
 #elif defined(PLATFOM_WINDOWS)
             DWORD timeout = to.seconds() * 1000;
-            ::setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout, sizeof(timeout));
+            ::setsockopt(sock_fd_, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout, sizeof(timeout));
 #endif
         }
         return result;

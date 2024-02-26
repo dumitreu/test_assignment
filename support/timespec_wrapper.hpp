@@ -6,7 +6,7 @@
     #include "time/windows/timespec_wrapper.hpp"
 #elif defined(PLATFORM_APPLE)
     #include "time/apple/timespec_wrapper.hpp"
-#elif defined(PLATFORM_LINUX)
+#elif defined(PLATFORM_LINUX) || defined(PLATFORM_ANDROID)
     #include "time/posix/timespec_wrapper.hpp"
 #elif defined(PLATFORM_UNIX)
     #include "time/posix/timespec_wrapper.hpp"

@@ -6,7 +6,8 @@ namespace lins {
 
     template<typename T, std::size_t CAPACITY>
     class ring_buffer {
-        static_assert(CAPACITY > 0, "CAPACITY must be non-zero number");
+        static_assert(CAPACITY > 0, "capacity must be a number greater than zero");
+
         class iter {
         public:
             using value_type = T;
@@ -40,11 +41,11 @@ namespace lins {
                 return retval;
             }
 
-            bool operator==(iter other) const {
+            bool operator==(iter const &other) const {
                 return owner_ptr_ == other.owner_ptr_ && curr_pos_ == other.curr_pos_;
             }
 
-            bool operator!=(iter other) const {
+            bool operator!=(iter const &other) const {
                 return !(*this == other);
             }
 
@@ -208,45 +209,89 @@ namespace lins {
 
         void push_back(T const &val) {
             if(size_ == CAPACITY) {
-                if constexpr (std::is_copy_assignable<T>::value) {
+                if constexpr (std::is_copy_assignable_v<T>) {
                     buff()[pos_] = val;
-                } else {
+                    pos_ = wrp_idx(1);
+                    return;
+                }
+                if constexpr (std::is_copy_constructible_v<T>) {
                     buff()[pos_].~T();
                     new(buff() + pos_) T(val);
+                    pos_ = wrp_idx(1);
+                    return;
                 }
-                pos_ = wrp_idx(1);
             } else {
-                new(buff() + wrp_idx(size_++)) T(val);
+                if constexpr (std::is_copy_constructible_v<T>) {
+                    new(buff() + wrp_idx(size_)) T(val);
+                    ++size_;
+                    return;
+                }
+                if constexpr (std::is_copy_assignable_v<T>) {
+                    new(buff() + wrp_idx(size_)) T;
+                    buff()[wrp_idx(size_)] = val;
+                    ++size_;
+                    return;
+                }
             }
+            throw std::runtime_error{"value insert error: cannot copy"};
         }
 
         void push_back(T &&val) {
             if(size_ == CAPACITY) {
-                if constexpr (std::is_move_assignable<T>::value) {
+                if constexpr (std::is_move_assignable_v<T>) {
                     buff()[pos_] = std::move(val);
-                } else {
+                    pos_ = wrp_idx(1);
+                    return;
+                }
+                if constexpr (std::is_move_constructible_v<T>) {
                     buff()[pos_].~T();
                     new(buff() + pos_) T(std::move(val));
+                    return;
                 }
                 pos_ = wrp_idx(1);
             } else {
-                new(buff() + wrp_idx(size_++)) T(std::move(val));
+                if constexpr (std::is_move_constructible_v<T>) {
+                    new(buff() + wrp_idx(size_)) T(std::move(val));
+                    ++size_;
+                    return;
+                }
+                if constexpr (std::is_move_assignable_v<T>) {
+                    new(buff() + wrp_idx(size_)) T;
+                    buff()[wrp_idx(size_)] = std::move(val);
+                    ++size_;
+                    return;
+                }
             }
+            throw std::runtime_error{"value insert error: cannot move"};
         }
 
         template<typename ...ARGS>
         void emplace_back(ARGS &&...args) {
             if(size_ == CAPACITY) {
-                if constexpr (std::is_move_assignable<T>::value) {
+                if constexpr (std::is_move_assignable_v<T>) {
                     buff()[pos_] = T{std::forward<ARGS>(args)...};
-                } else {
+                    pos_ = wrp_idx(1);
+                    return;
+                }
+                if constexpr (std::is_move_constructible_v<T>) {
                     buff()[pos_].~T();
                     new(buff() + pos_) T(std::forward<ARGS>(args)...);
+                    pos_ = wrp_idx(1);
+                    return;
                 }
-                pos_ = wrp_idx(1);
             } else {
-                new(buff() + wrp_idx(size_++)) T(std::forward<ARGS>(args)...);
+                if constexpr (std::is_move_constructible_v<T>) {
+                    new(buff() + wrp_idx(size_++)) T(std::forward<ARGS>(args)...);
+                    return;
+                }
+                if constexpr (std::is_move_assignable_v<T>) {
+                    new(buff() + wrp_idx(size_)) T;
+                    buff()[wrp_idx(size_)] = T{std::forward<ARGS>(args)...};
+                    ++size_;
+                    return;
+                }
             }
+            throw std::runtime_error{"value emplacing error: cannot construct"};
         }
 
         void clear() noexcept {

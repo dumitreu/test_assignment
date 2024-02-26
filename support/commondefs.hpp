@@ -53,7 +53,10 @@
 #include <filesystem>
 #endif
 #if (__cplusplus >= 202002L)
+#include <compare>
 #include <concepts>
+#include <coroutine>
+#include <span>
 #endif
 #include <cstdio>
 #include <cmath>
@@ -93,6 +96,11 @@
     #include <fcntl.h>
     #include <unistd.h>
     #include <stdlib.h>
+//    #if TARGET_OS_IPHONE
+//    #elif TARGET_IPHONE_SIMULATOR
+//    #elif TARGET_OS_MAC
+//    #else
+//    #endif
 #elif defined(__ANDROID__)
 #define PLATFORM_ANDROID
     #if !defined(_XOPEN_SOURCE) || _XOPEN_SOURCE < 500
@@ -227,11 +235,6 @@ inline int little_endian(void) {
 template<typename T, int size>
 int array_size(T(&)[size]) {
     return size;
-}
-
-template<typename T>
-T clamp(T const &value, T const &low, T const &high) {
-    return value < low ? low : high < value ? high : value;
 }
 
 template<typename T, typename FUNCTOR>

@@ -10,9 +10,12 @@ namespace lins {
         std::uint64_t max_value(int bits);
         std::uint64_t analog_to_digital(double value, std::uint8_t bits);
         double digital_to_analog(std::uint64_t value, std::uint8_t bits);
-        static void inplace_swap(void *data, int count) {
-            for(int i = 0; i < count / 2; ++i) {
-                std::swap(*(((std::uint8_t *)data) + i), *(((std::uint8_t *)data) + count - 1 - i));
+        static void inplace_swap(void *data, std::size_t count) {
+            if(data && count > 1) {
+                std::size_t const count_half{count / 2};
+                for(std::size_t i{0}; i < count_half; ++i) {
+                    std::swap(*(((std::uint8_t *)data) + i), *(((std::uint8_t *)data) + count - 1 - i));
+                }
             }
         }
         int bits_required(std::uint64_t v);
@@ -57,7 +60,7 @@ namespace lins {
         }
 
         static std::size_t num_of_set_bits(std::uint8_t byte) {
-            static const std::size_t lt[16]{0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
+            std::uint8_t constexpr lt[16]{0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
             return lt[(byte >> 4) & 0xf] + lt[byte & 0xf];
         }
 

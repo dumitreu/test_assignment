@@ -11,7 +11,6 @@
 #include <netdb.h>
 #endif
 
-
 namespace lins::net {
 
     DEFINE_RUNTIME_EXCEPTION_CLASS(socket_error)
@@ -30,7 +29,13 @@ namespace lins::net {
         void accept(socket &client_sock);
         bool connect(const std::string &address, std::uint16_t port);
         std::vector<std::uint8_t> receive(int len);
-        int  send(const void *buff, int len);
+        int send(void const *buff, int len, int flags
+#ifdef PLATFORM_WINDOWS
+            = 0
+#else
+            = MSG_NOSIGNAL
+#endif
+        );
         bool close() noexcept;
         bool shutdown();
         int  handle() const noexcept;
@@ -38,6 +43,7 @@ namespace lins::net {
         bool make_nonblocking();
         bool set_reuse_addr();
         bool make_nodelay();
+        bool make_nosigpipe();
         bool set_linger(bool on, int linger_time);
         bool set_keepalive(bool keep);
         bool get_keepalive() const;
@@ -50,7 +56,7 @@ namespace lins::net {
         bool set_rcv_timeout(lins::timespec_wrapper const &to, lins::timespec_wrapper &orig_to);
         std::string peer_addr() const noexcept;
         bool ok() const noexcept {
-            if(sock_fd_ > 0) {
+            if(sock_fd_ >= 0) {
                 int error_code{};
 #ifdef PLATFORM_WINDOWS
                 int error_code_size{sizeof(error_code)};
@@ -76,11 +82,11 @@ namespace lins::net {
                 std::uint32_t total_sent = 0;
                 const char *curr_buff = reinterpret_cast<const char *>(&net_size);
                 do {
-                    int wrote_count = lins::net::socket::send(curr_buff + total_sent, total_size - total_sent);
+                    int wrote_count = this->send(curr_buff + total_sent, total_size - total_sent);
                     if(wrote_count < 0) {
                         int e{errno};
                         while(e == EAGAIN) {
-                            wrote_count = lins::net::socket::send(curr_buff + total_sent, total_size - total_sent);
+                            wrote_count = this->send(curr_buff + total_sent, total_size - total_sent);
                             if(wrote_count < 0) {
                                 e = errno;
                             } else {
@@ -97,11 +103,11 @@ namespace lins::net {
                 total_sent = 0;
                 curr_buff = reinterpret_cast<const char *>(data);
                 do {
-                    int wrote_count = lins::net::socket::send(curr_buff + total_sent, total_size - total_sent);
+                    int wrote_count = this->send(curr_buff + total_sent, total_size - total_sent);
                     if(wrote_count < 0) {
                         int e{errno};
                         while(e == EAGAIN) {
-                            wrote_count = lins::net::socket::send(curr_buff + total_sent, total_size - total_sent);
+                            wrote_count = this->send(curr_buff + total_sent, total_size - total_sent);
                             if(wrote_count < 0) {
                                 e = errno;
                             } else {

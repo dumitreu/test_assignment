@@ -8,10 +8,18 @@ namespace lins {
 
 namespace sys_util {
 
+//extern const std::size_t Ki;
+//extern const std::size_t Mi;
+//extern const std::size_t Gi;
+
 constexpr std::size_t Ki = 1024;
 constexpr std::size_t Mi = Ki * Ki;
 constexpr std::size_t Gi = Mi * Ki;
 constexpr std::size_t Ti = Gi * Ki;
+
+//constexpr bool little_endian();
+//constexpr bool big_endian();
+//constexpr bool pdp_endian();
 
 #ifdef PLATFORM_WINDOWS
 enum endian_t : uint32_t {
